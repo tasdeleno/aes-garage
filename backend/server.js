@@ -605,7 +605,7 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
     if (!req.file) {
       return res.status(400).json({ message: 'Dosya yüklenmedi' });
     }
-    const imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    const imageUrl = `/uploads/${req.file.filename}`;
     res.json({
       message: 'Dosya başarıyla yüklendi',
       filename: req.file.filename,
