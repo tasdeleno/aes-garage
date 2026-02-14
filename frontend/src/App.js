@@ -85,10 +85,12 @@ function Navigation({ logo }) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center">
             <Link to="/" className="group flex items-center space-x-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/20 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <img src={logo} alt="AES Garage" className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-              </div>
+              {logo && (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-white/20 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                  <img src={logo} alt="AES Garage" className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-light tracking-[0.2em] text-white">AES</span>
                 <span className="text-xs font-light tracking-[0.3em] text-gray-400">GARAGE</span>
@@ -158,7 +160,7 @@ function Navigation({ logo }) {
 }
 
 function App() {
-  const [logo, setLogo] = useState('/images/logo.png');
+  const [logo, setLogo] = useState('');
   const [contactInfo, setContactInfo] = useState({
     phone: '+90 555 123 45 67',
     email: 'info@aesgarage.com',
@@ -229,10 +231,12 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12">
               <div className="md:col-span-2">
                 <div className="flex items-center space-x-3 mb-6 group">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-red-600/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
-                    <img src={logo} alt="AES Garage" className="relative w-10 h-10 object-contain" />
-                  </div>
+                  {logo && (
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-red-600/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
+                      <img src={logo} alt="AES Garage" className="relative w-10 h-10 object-contain" />
+                    </div>
+                  )}
                   <div>
                     <div className="text-xl font-light tracking-[0.2em]">AES</div>
                     <div className="text-[10px] font-light tracking-[0.3em] text-gray-600">GARAGE</div>
