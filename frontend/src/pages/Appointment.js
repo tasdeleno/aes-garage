@@ -1,5 +1,166 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+const API = process.env.REACT_APP_API_URL || '';
+
+function TrackingBox() {
+  const [trackCode, setTrackCode] = useState('');
+  const [trackError, setTrackError] = useState('');
+  const [trackLoading, setTrackLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleTrack = async (e) => {
+    e.preventDefault();
+    if (!trackCode.trim()) return;
+    setTrackError('');
+    setTrackLoading(true);
+
+    try {
+      await axios.get(`${API}/api/appointments/track/${trackCode.trim()}`);
+      navigate(`/track?code=${encodeURIComponent(trackCode.trim())}`);
+    } catch (err) {
+      setTrackError(err.response?.data?.message || 'Randevu bulunamadı. Takip kodunuzu kontrol edin.');
+      setTrackLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-8 sm:mb-12 border border-dark-900 hover:border-dark-800 transition-colors p-5 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-shrink-0 flex items-center gap-3">
+          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span className="text-xs tracking-widest font-light text-gray-400">RANDEVU TAKİP</span>
+        </div>
+        <form onSubmit={handleTrack} className="flex flex-1 gap-3">
+          <input
+            type="text"
+            value={trackCode}
+            onChange={(e) => { setTrackCode(e.target.value.toUpperCase()); setTrackError(''); }}
+            placeholder="Takip kodunuzu girin (AES-XXXXXXXX)"
+            className="flex-1 bg-transparent border border-dark-900 px-4 py-3 text-sm focus:border-white focus:outline-none transition-colors font-light placeholder:text-gray-700"
+          />
+          <button
+            type="submit"
+            disabled={!trackCode.trim() || trackLoading}
+            className={`px-5 sm:px-6 py-3 text-xs tracking-widest font-light transition-all whitespace-nowrap ${
+              trackCode.trim() && !trackLoading
+                ? 'border border-red-600 text-red-400 hover:bg-red-600 hover:text-white'
+                : 'border border-dark-900 text-gray-700 cursor-not-allowed'
+            }`}
+          >
+            {trackLoading ? '...' : 'SORGULA'}
+          </button>
+        </form>
+      </div>
+      {trackError && (
+        <p className="text-red-400 text-xs font-light mt-3 pl-0 sm:pl-8">{trackError}</p>
+      )}
+    </div>
+  );
+}
+
+function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep }) {
+  const [availability, setAvailability] = useState({});
+  const [dateError, setDateError] = useState('');
+
+  const allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+
+  const handleDateChange = async (e) => {
+    const date = e.target.value;
+    handleChange(e);
+    setDateError('');
+    setFormData(prev => ({ ...prev, time: '' }));
+
+    if (!date) return;
+
+    // Pazar günü kontrolü
+    const selectedDate = new Date(date);
+    if (selectedDate.getUTCDay() === 0) {
+      setDateError('Pazar günü kapalıyız. Lütfen başka bir gün seçin.');
+      return;
+    }
+
+    // Slot müsaitlik kontrolü
+    try {
+      const res = await axios.get(`${API}/api/appointments/availability?date=${date}`);
+      setAvailability(res.data);
+    } catch (err) {
+      console.error('Availability check failed:', err);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <h2 className="text-2xl font-light tracking-wider mb-8">Tarih & Saat Seçimi</h2>
+      <p className="text-sm text-gray-500 font-light">Pazartesi - Cumartesi, 09:00 - 18:00 arası hizmet vermekteyiz.</p>
+
+      <div>
+        <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">TARİH</label>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleDateChange}
+          min={new Date().toISOString().split('T')[0]}
+          className="w-full bg-transparent border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
+          required
+        />
+        {dateError && <p className="text-red-400 text-sm font-light mt-2">{dateError}</p>}
+      </div>
+
+      {formData.date && !dateError && (
+        <div>
+          <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">SAAT</label>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {allSlots.map(time => {
+              const slotInfo = availability[time];
+              const isFull = slotInfo && !slotInfo.available;
+              const isSelected = formData.time === time;
+
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  disabled={isFull}
+                  onClick={() => setFormData(prev => ({ ...prev, time }))}
+                  className={`py-3 sm:py-4 border font-light text-xs sm:text-sm transition-all touch-manipulation ${
+                    isFull
+                      ? 'border-dark-900 text-gray-700 cursor-not-allowed line-through'
+                      : isSelected
+                        ? 'border-red-600 bg-red-600/10 text-white'
+                        : 'border-dark-900 hover:border-white text-gray-300'
+                  }`}
+                >
+                  {time}
+                  {isFull && <span className="block text-[10px] text-gray-600 mt-1">Dolu</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-4">
+        <button type="button" onClick={prevStep}
+          className="flex-1 py-4 border border-dark-900 hover:border-white font-light tracking-widest text-sm transition-all">
+          GERİ
+        </button>
+        <button type="button" onClick={nextStep}
+          disabled={!formData.date || !formData.time || !!dateError}
+          className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${
+            formData.date && formData.time && !dateError
+              ? 'border-white hover:bg-white hover:text-black'
+              : 'border-dark-900 text-gray-700 cursor-not-allowed'
+          }`}>
+          DEVAM ET
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Appointment() {
   const [step, setStep] = useState(1);
@@ -8,7 +169,7 @@ function Appointment() {
     name: '',
     phone: '',
     email: '',
-    service: '',
+    service: [],
     carBrand: '',
     carModel: '',
     carYear: '',
@@ -22,6 +183,59 @@ function Appointment() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  // Dinamik servis listesi (backend'den çekilir, Admin panelinden yönetilir)
+  const [servicesList, setServicesList] = useState([]);
+
+  // servicePrices: servis adı → { min, max, note } map'i (servicesList'ten türetilir)
+  const [servicePrices, setServicePrices] = useState({});
+
+  // Backend'den servis listesini çek
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await axios.get(`${API}/api/settings`);
+        const general = {};
+        response.data.forEach(s => {
+          if (s.category === 'general') general[s.key] = s.value;
+        });
+
+        try {
+          if (general.servicesList) {
+            const parsed = JSON.parse(general.servicesList);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Boş title olanları filtrele
+              const valid = parsed.filter(s => s && s.title && s.title.trim());
+              if (valid.length > 0) {
+                setServicesList(valid);
+                // Fiyat map'ini oluştur (binlik ayraç olan noktayı temizle)
+                const cleanPrice = (val) => {
+                  if (!val) return '';
+                  // '2.000' → '2000', '1.300' → '1300', '800' → '800'
+                  return val.toString().replace(/\./g, '').replace(/,/g, '');
+                };
+                const pricesObj = {};
+                valid.forEach(svc => {
+                  pricesObj[svc.title] = {
+                    min: cleanPrice(svc.priceMin),
+                    max: cleanPrice(svc.priceMax),
+                    note: svc.priceNote || ''
+                  };
+                });
+                setServicePrices(pricesObj);
+              }
+            }
+          }
+        } catch(e) {
+          console.error('servicesList parse error:', e);
+        }
+      } catch (err) {
+        console.error('Servisler yüklenemedi:', err);
+      }
+    };
+    fetchServices();
+  }, []);
 
   // Türkiye'deki popüler araçlar
   const carDatabase = {
@@ -225,16 +439,10 @@ function Appointment() {
     },
   };
 
-  const services = [
-    'Periyodik Bakım',
-    'Motor Bakımı',
-    'Fren Bakımı',
-    'Lastik Değişimi',
-    'Klima Bakımı',
-    'Elektrik Sistemleri',
-    'Kaporta & Boya',
-    'Mekanik Onarım'
-  ];
+  // Servis isimleri: backend'den geldiyse dinamik, gelmediyse varsayılan
+  const services = servicesList.length > 0
+    ? servicesList.map(s => s.title).filter(Boolean)
+    : ['Periyodik Bakım', 'Motor Bakımı', 'Fren Bakımı', 'Lastik Değişimi', 'Klima Bakımı', 'Elektrik Sistemleri', 'Kaporta & Boya', 'Mekanik Onarım'];
 
   const years = [];
   for (let year = new Date().getFullYear() + 1; year >= 1990; year--) {
@@ -247,13 +455,19 @@ function Appointment() {
     setError('');
 
     try {
-      await axios.post('http://localhost:5000/api/appointments', {
+      const serviceText = Array.isArray(formData.service) ? formData.service.join(', ') : formData.service;
+      const result = await axios.post(`${API}/api/appointments`, {
         ...formData,
+        service: serviceText,
         message: `${formData.carBrand} ${formData.carModel} (${formData.carYear}) - ${formData.engineType} - ${formData.packageType} ${formData.message ? '- ' + formData.message : ''}`
       });
       setSuccess(true);
+      // Takip kodu varsa göster
+      if (result.data && result.data.trackingCode) {
+        setFormData(prev => ({ ...prev, trackingCode: result.data.trackingCode }));
+      }
     } catch (err) {
-      setError('Randevu oluşturulamadı. Lütfen tekrar deneyin.');
+      setError(err.response?.data?.message || 'Randevu oluşturulamadı. Lütfen tekrar deneyin.');
       setLoading(false);
     }
   };
@@ -284,7 +498,7 @@ function Appointment() {
   };
 
   const nextStep = () => {
-    if (step === 1 && formData.service) setStep(2);
+    if (step === 1 && formData.service.length > 0) setStep(2);
     else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) setStep(3);
     else if (step === 3 && formData.date && formData.time) setStep(4);
   };
@@ -300,10 +514,10 @@ function Appointment() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-black text-white pt-32 pb-20 px-6 flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6 flex items-center justify-center">
         <div className="max-w-2xl w-full text-center animate-fade-in">
-          <div className="mb-8">
-            <div className="w-20 h-20 mx-auto mb-6 relative">
+          <div className="mb-6 sm:mb-8">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 relative">
               <div className="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
               <div className="relative w-full h-full bg-white rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,33 +527,65 @@ function Appointment() {
             </div>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-6">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight mb-4 sm:mb-6">
             RANDEVUNUZ OLUŞTURULDU
           </h1>
           
-          <p className="text-xl font-light text-gray-500 mb-12">
+          <p className="text-xl font-light text-gray-500 mb-6">
             En kısa zamanda sizinle iletişime geçeceğiz
           </p>
 
-          <div className="border border-dark-900 p-8 mb-8">
-            <div className="space-y-4 text-left">
-              <div className="flex justify-between border-b border-dark-900 pb-4">
-                <span className="text-gray-500 font-light">Hizmet</span>
-                <span className="font-light">{formData.service}</span>
-              </div>
-              <div className="flex justify-between border-b border-dark-900 pb-4">
-                <span className="text-gray-500 font-light">Araç</span>
-                <span className="font-light">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
-              </div>
-              <div className="flex justify-between border-b border-dark-900 pb-4">
-                <span className="text-gray-500 font-light">Tarih & Saat</span>
-                <span className="font-light">{new Date(formData.date).toLocaleDateString('tr-TR')} - {formData.time}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 font-light">İletişim</span>
-                <span className="font-light">{formData.phone}</span>
-              </div>
+          {formData.trackingCode && (
+            <div className="border border-red-600/30 bg-red-600/5 p-6 mb-8">
+              <p className="text-xs tracking-widest text-gray-500 mb-2">TAKİP KODUNUZ</p>
+              <p className="text-2xl font-light text-red-400 tracking-wider">{formData.trackingCode}</p>
+              <p className="text-xs text-gray-600 font-light mt-2">
+                Bu kodu saklayın.{' '}
+                <Link to="/track" className="text-red-400 hover:text-red-300 underline transition-colors">
+                  Randevu Takip
+                </Link>{' '}
+                sayfasından randevunuzu sorgulayabilir veya iptal edebilirsiniz.
+              </p>
             </div>
+          )}
+
+          <div className="border border-dark-900 p-4 sm:p-6 md:p-8 mb-8">
+            <div className="space-y-4 text-left">
+              <div className="border-b border-dark-900 pb-4">
+                <span className="text-gray-500 font-light text-sm block mb-2">Hizmetler</span>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(formData.service) ? formData.service : [formData.service]).map((s, i) => (
+                    <span key={i} className="px-3 py-1 border border-dark-800 text-sm font-light">{s}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                <span className="text-gray-500 font-light text-sm flex-shrink-0">Araç</span>
+                <span className="font-light text-sm text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
+              </div>
+              <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                <span className="text-gray-500 font-light text-sm flex-shrink-0">Tarih & Saat</span>
+                <span className="font-light text-sm">{new Date(formData.date).toLocaleDateString('tr-TR')} - {formData.time}</span>
+              </div>
+              <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                <span className="text-gray-500 font-light text-sm flex-shrink-0">İletişim</span>
+                <span className="font-light text-sm">{formData.phone}</span>
+              </div>
+              {formData.service.length > 0 && (() => {
+                const selected = Array.isArray(formData.service) ? formData.service : [formData.service];
+                const priced = selected.filter(s => servicePrices[s]);
+                if (priced.length === 0) return null;
+                const totalMin = priced.reduce((sum, s) => sum + (Number(servicePrices[s].min) || 0), 0);
+                const totalMax = priced.reduce((sum, s) => sum + (Number(servicePrices[s].max) || 0), 0);
+                return (
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Tahmini Fiyat</span>
+                    <span className="font-light text-sm">{totalMin.toLocaleString('tr-TR')} - {totalMax.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                );
+              })()}
+            </div>
+            <p className="text-[10px] sm:text-xs font-light text-gray-600 mt-2 text-center">* Fiyat tahmini olup kesin fiyat değildir</p>
           </div>
 
           <button
@@ -349,7 +595,7 @@ function Appointment() {
                 name: '',
                 phone: '',
                 email: '',
-                service: '',
+                service: [],
                 carBrand: '',
                 carModel: '',
                 carYear: '',
@@ -361,31 +607,41 @@ function Appointment() {
               });
               setStep(1);
               setManualCar(false);
+              setKvkkAccepted(false);
             }}
             className="px-12 py-4 border border-white hover:bg-white hover:text-black transition-all duration-300 font-light tracking-widest text-sm"
           >
             YENİ RANDEVU OLUŞTUR
           </button>
+          <Link
+            to="/track"
+            className="inline-block px-12 py-4 border border-dark-900 text-gray-400 hover:border-white hover:text-white transition-all duration-300 font-light tracking-widest text-sm"
+          >
+            RANDEVU TAKİP
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-32 pb-20 px-6">
+    <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
-          <div className="inline-block px-4 py-2 border border-white/30 mb-6">
-            <span className="text-xs tracking-[0.3em] font-light">RANDEVU SİSTEMİ</span>
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 border border-white/30 mb-4 sm:mb-6">
+            <span className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] font-light">RANDEVU SİSTEMİ</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-light tracking-tight mb-4 sm:mb-6">
             RANDEVU OLUŞTUR
           </h1>
-          <p className="text-gray-500 font-light">
+          <p className="text-gray-500 font-light text-sm sm:text-base">
             Size en uygun zamanı seçin, biz gerisini halledelim
           </p>
         </div>
+
+        {/* Randevu Takip Kutusu */}
+        <TrackingBox />
 
         {/* Error Message */}
         {error && (
@@ -395,76 +651,103 @@ function Appointment() {
         )}
 
         {/* Progress */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between">
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} className="flex items-center flex-1">
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
-                  step >= num ? 'border-white bg-white text-black' : 'border-dark-800 text-gray-700'
-                }`}>
-                  {num}
+        <div className="mb-8 sm:mb-12">
+          <div className="flex items-center">
+            {[
+              { num: 1, label: 'HİZMET' },
+              { num: 2, label: 'ARAÇ' },
+              { num: 3, label: 'TARİH' },
+              { num: 4, label: 'ÖZET' },
+            ].map((item, idx) => (
+              <div key={item.num} className={`flex flex-col items-center ${idx < 3 ? 'flex-1' : ''}`}>
+                <div className="flex items-center w-full">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 text-sm sm:text-base flex-shrink-0 ${
+                    step >= item.num ? 'border-white bg-white text-black' : 'border-dark-800 text-gray-700'
+                  }`}>
+                    {item.num}
+                  </div>
+                  {idx < 3 && (
+                    <div className={`flex-1 h-[1px] mx-2 sm:mx-4 transition-all duration-500 ${
+                      step > item.num ? 'bg-white' : 'bg-gray-800'
+                    }`}></div>
+                  )}
                 </div>
-                {num < 4 && (
-                  <div className={`flex-1 h-[1px] mx-4 transition-all duration-500 ${
-                    step > num ? 'bg-white' : 'bg-gray-800'
-                  }`}></div>
-                )}
+                <span className={`text-[10px] sm:text-xs tracking-wider font-light mt-2 sm:mt-3 ${step >= item.num ? 'text-white' : 'text-gray-500'}`}>{item.label}</span>
               </div>
             ))}
-          </div>
-          <div className="flex justify-between mt-4">
-            <span className="text-xs tracking-wider font-light text-gray-500">HİZMET</span>
-            <span className="text-xs tracking-wider font-light text-gray-500">ARAÇ</span>
-            <span className="text-xs tracking-wider font-light text-gray-500">TARİH</span>
-            <span className="text-xs tracking-wider font-light text-gray-500">ÖZET</span>
           </div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Step 1: Service */}
+          {/* Step 1: Service (Çoklu Seçim) */}
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <h2 className="text-2xl font-light tracking-wider mb-8">Hizmet Seçimi</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map((service) => (
-                  <label
-                    key={service}
-                    className={`group relative p-6 border cursor-pointer transition-all duration-300 ${
-                      formData.service === service
-                        ? 'border-white bg-white/5'
-                        : 'border-dark-900 hover:border-gray-600'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="service"
-                      value={service}
-                      checked={formData.service === service}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <div className="flex items-center justify-between">
-                      <span className="font-light">{service}</span>
-                      <div className={`w-5 h-5 rounded-full border-2 transition-all ${
-                        formData.service === service ? 'border-white bg-white' : 'border-dark-800'
-                      }`}>
-                        {formData.service === service && (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </label>
-                ))}
+              <div>
+                <h2 className="text-2xl font-light tracking-wider mb-2">Hizmet Seçimi</h2>
+                <p className="text-sm text-gray-500 font-light">Birden fazla hizmet seçebilirsiniz</p>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {services.map((service) => {
+                  const isSelected = formData.service.includes(service);
+                  return (
+                    <label
+                      key={service}
+                      className={`group relative p-6 border cursor-pointer transition-all duration-300 ${
+                        isSelected
+                          ? 'border-white bg-white/5'
+                          : 'border-dark-900 hover:border-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        value={service}
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const { value, checked } = e.target;
+                          setFormData(prev => ({
+                            ...prev,
+                            service: checked
+                              ? [...prev.service, value]
+                              : prev.service.filter(s => s !== value)
+                          }));
+                        }}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="font-light">{service}</span>
+                        <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${
+                          isSelected ? 'border-white bg-white' : 'border-dark-800'
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {formData.service.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-400 font-light">
+                  <span className="text-white">{formData.service.length}</span> hizmet seçildi
+                  {formData.service.length > 1 && (
+                    <span className="text-gray-600">—</span>
+                  )}
+                  <span className="text-gray-600 truncate">{formData.service.join(', ')}</span>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={nextStep}
-                disabled={!formData.service}
+                disabled={formData.service.length === 0}
                 className={`w-full py-4 border font-light tracking-widest text-sm transition-all duration-300 ${
-                  formData.service
+                  formData.service.length > 0
                     ? 'border-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-dark-900 text-gray-700 cursor-not-allowed'
                 }`}
@@ -697,96 +980,53 @@ function Appointment() {
 
           {/* Step 3: Date & Time */}
           {step === 3 && (
-            <div className="space-y-6 animate-fade-in">
-              <h2 className="text-2xl font-light tracking-wider mb-8">Tarih & Saat Seçimi</h2>
-              
-              <div>
-                <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">TARİH</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full bg-transparent border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">SAAT</label>
-                <select
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
-                  required
-                >
-                  <option value="">Seçiniz</option>
-                  {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 py-4 border border-dark-900 hover:border-white font-light tracking-widest text-sm transition-all"
-                >
-                  GERİ
-                </button>
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={!formData.date || !formData.time}
-                  className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${
-                    formData.date && formData.time
-                      ? 'border-white hover:bg-white hover:text-black'
-                      : 'border-dark-900 text-gray-700 cursor-not-allowed'
-                  }`}
-                >
-                  DEVAM ET
-                </button>
-              </div>
-            </div>
+            <DateTimeStep
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              nextStep={nextStep}
+              prevStep={prevStep}
+            />
           )}
 
           {/* Step 4: Summary */}
           {step === 4 && (
             <div className="space-y-6 animate-fade-in">
-              <h2 className="text-2xl font-light tracking-wider mb-8">Randevu Özeti</h2>
-              
+              <h2 className="text-2xl font-light tracking-wider">Randevu Özeti</h2>
+
               {/* Summary Box */}
-              <div className="border border-dark-900 p-8 space-y-6 mb-8">
-                <div className="flex justify-between border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light">Hizmet</span>
-                  <span className="font-light">{formData.service}</span>
+              <div className="border border-dark-900 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+                <div className="border-b border-dark-900 pb-4">
+                  <span className="text-gray-500 font-light text-sm block mb-2">Hizmetler ({formData.service.length})</span>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.service.map((s, i) => (
+                      <span key={i} className="px-2 sm:px-3 py-1 border border-dark-800 text-xs sm:text-sm font-light">{s}</span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex justify-between border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light">Araç</span>
-                  <span className="font-light">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
+                <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Araç</span>
+                  <span className="font-light text-sm text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
                 </div>
                 {formData.engineType && (
-                  <div className="flex justify-between border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light">Motor</span>
-                    <span className="font-light">{formData.engineType}</span>
+                  <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Motor</span>
+                    <span className="font-light text-sm text-right ml-4">{formData.engineType}</span>
                   </div>
                 )}
                 {formData.packageType && (
-                  <div className="flex justify-between border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light">Paket</span>
-                    <span className="font-light">{formData.packageType}</span>
+                  <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Paket</span>
+                    <span className="font-light text-sm text-right ml-4">{formData.packageType}</span>
                   </div>
                 )}
-                <div className="flex justify-between border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light">Tarih</span>
-                  <span className="font-light">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
+                <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Tarih</span>
+                  <span className="font-light text-sm">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 font-light">Saat</span>
-                  <span className="font-light">{formData.time}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Saat</span>
+                  <span className="font-light text-sm">{formData.time}</span>
                 </div>
               </div>
 
@@ -841,6 +1081,50 @@ function Appointment() {
                 />
               </div>
 
+              {/* Ortalama Fiyat Bilgisi */}
+              {formData.service.length > 0 && (() => {
+                const priced = formData.service.filter(s => servicePrices[s]);
+                if (priced.length === 0) return null;
+                const totalMin = priced.reduce((sum, s) => sum + (Number(servicePrices[s].min) || 0), 0);
+                const totalMax = priced.reduce((sum, s) => sum + (Number(servicePrices[s].max) || 0), 0);
+                return (
+                  <div className="border border-dark-800 bg-dark-900/50 p-6">
+                    <div className="text-xs tracking-widest font-light text-gray-500 mb-3">TAHMİNİ TOPLAM FİYAT ARALIĞI</div>
+                    <div className="text-2xl font-light text-white mb-2">
+                      {totalMin.toLocaleString('tr-TR')} - {totalMax.toLocaleString('tr-TR')} ₺
+                    </div>
+                    {priced.length > 1 && (
+                      <div className="space-y-1 mb-2">
+                        {priced.map(s => (
+                          <p key={s} className="text-xs font-light text-gray-500">
+                            {s}: {Number(servicePrices[s].min).toLocaleString('tr-TR')} - {Number(servicePrices[s].max).toLocaleString('tr-TR')} ₺
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {priced.length === 1 && servicePrices[priced[0]].note && (
+                      <p className="text-xs font-light text-gray-500">{servicePrices[priced[0]].note}</p>
+                    )}
+                    <p className="text-xs font-light text-red-400 mt-2">* Bu fiyatlar tahmini olup kesin fiyat değildir. Kesin fiyat muayene sonrası belirlenecektir.</p>
+                  </div>
+                );
+              })()}
+
+              {/* KVKK Onayı */}
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={kvkkAccepted}
+                  onChange={(e) => setKvkkAccepted(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 flex-shrink-0"
+                  required
+                />
+                <span className="text-sm font-light text-gray-400 group-hover:text-gray-300 transition-colors">
+                  <Link to="/kvkk" target="_blank" className="text-red-500 hover:text-red-400 underline">KVKK Aydınlatma Metni</Link>'ni
+                  okudum ve kişisel verilerimin işlenmesini kabul ediyorum.
+                </span>
+              </label>
+
               <div className="flex gap-4">
                 <button
                   type="button"
@@ -851,7 +1135,7 @@ function Appointment() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !kvkkAccepted}
                   className="flex-1 py-4 bg-white text-black hover:bg-gray-200 font-light tracking-widest text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'GÖNDERİLİYOR...' : 'RANDEVU OLUŞTUR'}

@@ -2,204 +2,187 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
+const API = process.env.REACT_APP_API_URL || '';
+
 function Services() {
-  const [services, setServices] = useState([]);
+  const defaultServices = [
+    {
+      title: 'Periyodik Bakım',
+      description: 'Aracınızın düzenli bakım ihtiyaçlarını karşılayan kapsamlı servis programı',
+      image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
+      features: 'Motor yağı ve filtre değişimi\nFren sistemleri kontrolü\nSüspansiyon kontrolü\nLastik kontrolü ve balans\nElektriksel sistem kontrolü',
+      duration: '2-3 saat',
+      priceMin: '800', priceMax: '2.000', priceNote: 'Araç segmentine göre değişir',
+    },
+    {
+      title: 'Motor Bakımı',
+      description: 'Motorun maksimum performans ve verimlilikte çalışması için uzman bakım',
+      image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+      features: 'Motor revizyonu\nTurbo bakımı\nEnjeksiyon sistemi temizliği\nTriger kayışı değişimi\nMotor performans testi',
+      duration: '4-6 saat',
+      priceMin: '1.500', priceMax: '8.000', priceNote: 'İşlem kapsamına göre değişir',
+    },
+    {
+      title: 'Fren Bakımı',
+      description: 'Güvenliğiniz için kritik öneme sahip fren sisteminin profesyonel bakımı',
+      image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
+      features: 'Fren balatası değişimi\nFren diski kontrolü ve değişimi\nFren hidroliği yenileme\nABS sistemi kontrolü\nEl freni ayarı',
+      duration: '2-3 saat',
+      priceMin: '500', priceMax: '2.500', priceNote: 'Parça durumuna göre değişir',
+    },
+    {
+      title: 'Lastik Değişimi',
+      description: 'Sürüş güvenliği ve konforu için profesyonel lastik bakımı',
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+      features: 'Lastik montaj/demontaj\nBalans ayarı\nRot ayarı\nLastik tamir\nMevsimlik değişim',
+      duration: '1-2 saat',
+      priceMin: '200', priceMax: '400', priceNote: 'Lastik bedeli hariç',
+    },
+  ];
+
+  const [services, setServices] = useState(defaultServices);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        console.log('🔄 Fetching settings...');
-        const response = await axios.get('http://localhost:5000/api/settings');
-        console.log('📦 All settings:', response.data);
-
-        const serviceMap = {};
+        const response = await axios.get(`${API}/api/settings`);
+        const general = {};
 
         response.data.forEach(setting => {
-          console.log('⚙️ Processing:', setting.key, setting.category, setting.value);
-          
-          if (setting.category === 'images' && setting.key.match(/^service\d+$/)) {
-            const serviceNum = setting.key;
-            if (!serviceMap[serviceNum]) serviceMap[serviceNum] = {};
-            serviceMap[serviceNum].image = setting.value;
-          }
-          else if (setting.category === 'serviceTitles') {
-            const serviceNum = setting.key;
-            if (!serviceMap[serviceNum]) serviceMap[serviceNum] = {};
-            serviceMap[serviceNum].title = setting.value;
-          }
-          else if (setting.category === 'serviceDescriptions') {
-            const serviceNum = setting.key;
-            if (!serviceMap[serviceNum]) serviceMap[serviceNum] = {};
-            serviceMap[serviceNum].description = setting.value;
+          if (setting.category === 'general') {
+            general[setting.key] = setting.value;
           }
         });
 
-        console.log('🗺️ Service Map:', serviceMap);
-
-        const serviceData = [];
-        Object.keys(serviceMap).sort().forEach(key => {
-          if (serviceMap[key].title || serviceMap[key].image) {
-            serviceData.push({
-              key: key,
-              title: serviceMap[key].title || 'Servis',
-              description: serviceMap[key].description || 'Profesyonel araç bakım hizmeti',
-              image: serviceMap[key].image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
-              features: [
-                'Uzman kadro',
-                'Orijinal yedek parça',
-                'Garanti sertifikası',
-                'Hızlı servis',
-                'Uygun fiyat'
-              ],
-              duration: '2-4 saat',
-              price: 'Fiyat için iletişime geçin'
-            });
-          }
-        });
-
-        console.log('✅ Final services:', serviceData);
-
-        if (serviceData.length > 0) {
-          setServices(serviceData);
-        } else {
-          console.log('⚠️ No services found, using defaults');
-          setServices([
-            {
-              key: 'service1',
-              title: 'Periyodik Bakım',
-              description: 'Aracınızın düzenli bakım ihtiyaçlarını karşılayan kapsamlı servis programı',
-              image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
-              features: ['Motor yağı ve filtre değişimi', 'Fren sistemleri kontrolü', 'Süspansiyon kontrolü', 'Lastik kontrolü ve balans', 'Elektriksel sistem kontrolü'],
-              duration: '2-3 saat',
-              price: '800₺\'den başlayan fiyatlar'
-            },
-            {
-              key: 'service2',
-              title: 'Motor Bakımı',
-              description: 'Motorun maksimum performans ve verimlilikte çalışması için uzman bakım',
-              image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
-              features: ['Motor revizyonu', 'Turbo bakımı', 'Enjeksiyon sistemi temizliği', 'Triger kayışı değişimi', 'Motor performans testi'],
-              duration: '4-6 saat',
-              price: '1.500₺\'den başlayan fiyatlar'
-            },
-            {
-              key: 'service3',
-              title: 'Fren Sistemi',
-              description: 'Güvenliğiniz için kritik öneme sahip fren sisteminin profesyonel bakımı',
-              image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
-              features: ['Fren balatası değişimi', 'Fren diski kontrolü ve değişimi', 'Fren hidroliği yenileme', 'ABS sistemi kontrolü', 'El freni ayarı'],
-              duration: '2-3 saat',
-              price: '600₺\'den başlayan fiyatlar'
-            },
-            {
-              key: 'service4',
-              title: 'Lastik Hizmetleri',
-              description: 'Sürüş güvenliği ve konforu için profesyonel lastik bakımı',
-              image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
-              features: ['Lastik montaj/demontaj', 'Balans ayarı', 'Rot ayarı', 'Lastik tamir', 'Mevsimlik değişim'],
-              duration: '1-2 saat',
-              price: '200₺\'den başlayan fiyatlar'
+        // servicesList JSON'dan parse et
+        try {
+          if (general.servicesList) {
+            const parsed = JSON.parse(general.servicesList);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Boş title olanları filtrele, image yoksa varsayılan ekle
+              const valid = parsed
+                .filter(s => s && s.title && s.title.trim())
+                .map(s => ({
+                  ...s,
+                  image: s.image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80'
+                }));
+              if (valid.length > 0) setServices(valid);
             }
-          ]);
+          }
+        } catch(e) {
+          console.error('servicesList parse error:', e);
         }
       } catch (error) {
-        console.error('❌ Error:', error);
-        setServices([
-          {
-            key: 'service1',
-            title: 'Periyodik Bakım',
-            description: 'Aracınızın düzenli bakım ihtiyaçlarını karşılayan kapsamlı servis programı',
-            image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
-            features: ['Motor yağı ve filtre değişimi', 'Fren sistemleri kontrolü', 'Süspansiyon kontrolü', 'Lastik kontrolü ve balans', 'Elektriksel sistem kontrolü'],
-            duration: '2-3 saat',
-            price: '800₺\'den başlayan fiyatlar'
-          }
-        ]);
+        console.error('Servisler yüklenemedi:', error);
       }
     };
 
     fetchServices();
   }, []);
 
+  // features string'ini array'e çevir
+  const getFeatures = (service) => {
+    if (Array.isArray(service.features)) return service.features;
+    if (typeof service.features === 'string' && service.features.trim()) {
+      return service.features.split('\n').filter(f => f.trim());
+    }
+    return ['Uzman kadro', 'Orijinal yedek parça', 'Garanti sertifikası'];
+  };
+
+  // Fiyat gösterimi
+  const getPriceDisplay = (service) => {
+    if (service.priceMin && service.priceMax) {
+      return `${service.priceMin} - ${service.priceMax} ₺`;
+    }
+    if (service.price) return service.price;
+    return 'Fiyat için iletişime geçin';
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
-      <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[50vh] sm:h-[60vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black z-10"></div>
-          <img 
-            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
+          <img
+            src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80"
             alt="Services"
             className="w-full h-full object-cover"
+            loading="eager"
           />
         </div>
-        
-        <div className="relative z-20 text-center px-6 max-w-4xl mx-auto">
-          <div className="mb-6">
-            <div className="inline-block px-4 py-2 border border-white/30">
-              <span className="text-xs tracking-[0.3em] font-light">SERVİS HİZMETLERİ</span>
+
+        <div className="relative z-20 text-center px-4 sm:px-6 max-w-4xl mx-auto">
+          <div className="mb-4 sm:mb-6">
+            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 border border-white/30">
+              <span className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] font-light">SERVİS HİZMETLERİ</span>
             </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-light tracking-tight mb-4 sm:mb-6">
             PREMIUM
             <br />
             <span className="text-gray-400">HİZMET ANLAYIŞI</span>
           </h1>
-          <p className="text-lg font-light text-gray-300 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg font-light text-gray-300 max-w-2xl mx-auto px-2">
             Aracınız için en üst düzey bakım ve onarım hizmetleri
           </p>
         </div>
       </section>
 
-      <section className="py-32 px-6">
+      <section className="py-12 sm:py-20 md:py-32 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {services.map((service, index) => (
               <div
                 key={index}
                 className="group relative overflow-hidden bg-gradient-to-b from-dark-900 to-black border border-dark-800 hover:border-red-900 transition-all duration-500"
               >
-                <div className="relative h-80 overflow-hidden">
+                <div className="relative h-48 sm:h-64 md:h-80 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10"></div>
                   <img
-                    src={service.image}
+                    src={service.image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80'}
                     alt={service.title}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
 
-                <div className="p-8">
-                  <h3 className="text-3xl font-light tracking-wider mb-4">
+                <div className="p-4 sm:p-6 md:p-8">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-light tracking-wider mb-3 sm:mb-4">
                     {service.title}
                   </h3>
-                  <p className="text-gray-400 font-light mb-6 leading-relaxed">
+                  <p className="text-gray-400 font-light mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">
                     {service.description}
                   </p>
 
-                  <ul className="space-y-3 mb-8">
-                    {service.features.map((feature, i) => (
+                  <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
+                    {getFeatures(service).map((feature, i) => (
                       <li key={i} className="flex items-start space-x-3">
                         <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                        <span className="text-sm font-light text-gray-400">{feature}</span>
+                        <span className="text-xs sm:text-sm font-light text-gray-400">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <div className="flex items-center justify-between pt-6 border-t border-dark-800">
+                  <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-dark-800">
                     <div>
-                      <div className="text-xs tracking-widest font-light text-gray-500 mb-1">SÜRE</div>
-                      <div className="text-sm font-light">{service.duration}</div>
+                      <div className="text-[10px] sm:text-xs tracking-widest font-light text-gray-500 mb-1">SÜRE</div>
+                      <div className="text-xs sm:text-sm font-light">{service.duration || '2-4 saat'}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs tracking-widest font-light text-gray-500 mb-1">FİYAT</div>
-                      <div className="text-sm font-light">{service.price}</div>
+                      <div className="text-[10px] sm:text-xs tracking-widest font-light text-gray-500 mb-1">FİYAT</div>
+                      <div className="text-xs sm:text-sm font-light">{getPriceDisplay(service)}</div>
                     </div>
                   </div>
+                  {service.priceNote && (
+                    <p className="text-[10px] sm:text-xs text-gray-600 font-light mt-2">{service.priceNote}</p>
+                  )}
 
                   <Link
                     to="/appointment"
-                    className="group/btn mt-6 w-full py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300"
+                    className="group/btn mt-4 sm:mt-6 w-full py-3 sm:py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
                   >
-                    <span className="text-sm font-light tracking-widest">RANDEVU AL</span>
+                    <span className="text-xs sm:text-sm font-light tracking-widest">RANDEVU AL</span>
                     <svg className="w-4 h-4 transform group-hover/btn:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
@@ -211,24 +194,24 @@ function Services() {
         </div>
       </section>
 
-      <section className="py-32 px-6 bg-gradient-to-b from-black via-dark-900 to-black">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-gradient-to-b from-black via-dark-900 to-black">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl md:text-6xl font-light tracking-tight mb-8">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-light tracking-tight mb-6 sm:mb-8">
             ÖZELLEŞTİRİLMİŞ
             <br />
             <span className="text-gray-400">BAKIM PAKETİ</span>
           </h2>
-          <p className="text-xl font-light text-gray-400 mb-12 leading-relaxed">
+          <p className="text-sm sm:text-lg md:text-xl font-light text-gray-400 mb-8 sm:mb-12 leading-relaxed px-2">
             Aracınızın ihtiyaçlarına özel hazırlanmış bakım paketi için
-            <br />
+            <br className="hidden sm:block" />
             uzman ekibimizle görüşün
           </p>
           <Link
             to="/appointment"
-            className="inline-block group relative overflow-hidden px-16 py-5 border border-red-600"
+            className="inline-block group relative overflow-hidden px-8 sm:px-16 py-4 sm:py-5 border border-red-600"
           >
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-            <span className="relative text-sm tracking-[0.3em] font-light text-white group-hover:text-white transition-colors duration-500">
+            <span className="relative text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] font-light text-white">
               HEMEN İLETİŞİME GEÇİN
             </span>
           </Link>

@@ -135,7 +135,7 @@ function Pricing() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
-      <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/70 to-black z-10"></div>
           <img 
@@ -147,30 +147,30 @@ function Pricing() {
         
         <div className="relative z-20 text-center px-6">
           <div className="mb-6">
-            <div className="inline-block px-4 py-2 border border-white/30">
+            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 border border-white/30">
               <span className="text-xs tracking-[0.3em] font-light">FİYAT LİSTESİ</span>
             </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-light tracking-tight mb-6">
             ŞEFFAF
             <br />
             <span className="text-gray-500">FİYATLANDIRMA</span>
           </h1>
-          <p className="text-lg font-light text-gray-400">
+          <p className="text-sm sm:text-lg font-light text-gray-400">
             Tüm hizmetlerimiz için detaylı fiyat bilgileri
           </p>
         </div>
       </section>
 
       {/* Filter Tabs */}
-      <section className="sticky top-20 z-40 bg-black/95 backdrop-blur-xl border-b border-dark-900 py-6">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex overflow-x-auto space-x-4 pb-2 scrollbar-hide">
+      <section className="sticky top-16 sm:top-20 z-20 bg-black/95 backdrop-blur-xl border-b border-dark-900 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-wrap gap-2 sm:gap-3 pb-2">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`whitespace-nowrap px-6 py-3 text-sm font-light tracking-wider transition-all duration-300 ${
+                className={`whitespace-nowrap px-3 py-1.5 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-light tracking-wider transition-all duration-300 touch-manipulation ${
                   selectedCategory === category
                     ? 'bg-white text-black'
                     : 'border border-dark-900 hover:border-white'
@@ -184,20 +184,20 @@ function Pricing() {
       </section>
 
       {/* Pricing Grid */}
-      <section className="py-20 px-6">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {filteredData.map((category, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-b from-dark-950 to-black border border-dark-900 p-8 group hover:border-gray-600 transition-all duration-500"
+                className="bg-gradient-to-b from-dark-950 to-black border border-dark-900 p-4 sm:p-6 md:p-8 group hover:border-gray-600 transition-all duration-500"
               >
                 {/* Category Header */}
                 <div className="flex items-center space-x-4 mb-8">
                   <div className="text-white group-hover:scale-110 transition-transform duration-500">
                     {category.icon}
                   </div>
-                  <h2 className="text-2xl font-light tracking-wider">
+                  <h2 className="text-xl sm:text-2xl font-light tracking-wider">
                     {category.category}
                   </h2>
                 </div>
@@ -230,9 +230,9 @@ function Pricing() {
       </section>
 
       {/* Important Notes */}
-      <section className="py-20 px-6 bg-gradient-to-b from-black via-dark-900 to-black">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-b from-black via-dark-900 to-black">
         <div className="max-w-4xl mx-auto">
-          <div className="border border-dark-900 p-8">
+          <div className="border border-dark-900 p-4 sm:p-6 md:p-8">
             <h3 className="text-2xl font-light tracking-wider mb-6">ÖNEMLİ BİLGİLER</h3>
             <div className="space-y-4 text-gray-500 font-light">
               <div className="flex items-start space-x-3">
@@ -261,9 +261,9 @@ function Pricing() {
       </section>
 
       {/* CTA */}
-      <section className="py-32 px-6">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl md:text-6xl font-light tracking-tight mb-8">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-light tracking-tight mb-8">
             DETAYLI TEKLİF
             <br />
             <span className="text-gray-500">ALIN</span>
@@ -273,7 +273,7 @@ function Pricing() {
           </p>
           <Link
             to="/appointment"
-            className="inline-block group relative overflow-hidden px-16 py-5 border border-white"
+            className="inline-block group relative overflow-hidden px-8 sm:px-16 py-5 border border-white"
           >
             <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             <span className="relative text-sm tracking-[0.3em] font-light text-white group-hover:text-black transition-colors duration-500">
