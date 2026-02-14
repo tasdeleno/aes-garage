@@ -8,8 +8,16 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
+const cloudinary = require('cloudinary').v2;
 
 dotenv.config();
+
+// ============ CLOUDINARY CONFIG ============
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // DNS fix: Lokal DNS SRV çözemezse Google/Cloudflare DNS kullan
 const dns = require('dns');
@@ -129,19 +137,22 @@ const ContactMessageSchema = new mongoose.Schema({
 const ContactMessage = mongoose.model('ContactMessage', ContactMessageSchema);
 
 // ============ MULTER ============
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer: Cloudinary varsa memory storage, yoksa disk storage (fallback)
+const storage = process.env.CLOUDINARY_CLOUD_NAME
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -605,12 +616,35 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
     if (!req.file) {
       return res.status(400).json({ message: 'Dosya yüklenmedi' });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({
-      message: 'Dosya başarıyla yüklendi',
-      filename: req.file.filename,
-      url: imageUrl
-    });
+
+    // Cloudinary varsa oraya yükle, yoksa local disk
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      // Buffer'dan Cloudinary'ye yükle
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'aes-garage', quality: 'auto', fetch_format: 'auto' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      res.json({
+        message: 'Dosya başarıyla yüklendi',
+        filename: result.public_id,
+        url: result.secure_url
+      });
+    } else {
+      // Local fallback
+      const imageUrl = `/uploads/${req.file.filename}`;
+      res.json({
+        message: 'Dosya başarıyla yüklendi',
+        filename: req.file.filename,
+        url: imageUrl
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
