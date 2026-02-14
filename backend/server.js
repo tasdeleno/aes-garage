@@ -18,6 +18,9 @@ dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Render.com gibi reverse proxy arkasında çalışırken gerekli
+app.set('trust proxy', 1);
+
 // ============ MIDDLEWARE ============
 
 // CORS - sadece izin verilen origin'ler (madde 3)
