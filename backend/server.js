@@ -13,11 +13,16 @@ const cloudinary = require('cloudinary').v2;
 dotenv.config();
 
 // ============ CLOUDINARY CONFIG ============
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  console.log('☁️  Cloudinary configured:', process.env.CLOUDINARY_CLOUD_NAME);
+} else {
+  console.log('⚠️  Cloudinary not configured - using local uploads');
+}
 
 // DNS fix: Lokal DNS SRV çözemezse Google/Cloudflare DNS kullan
 const dns = require('dns');
@@ -646,7 +651,8 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
       });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Upload error:', error);
+    res.status(500).json({ message: error.message, detail: error.http_code ? `Cloudinary HTTP ${error.http_code}` : 'Upload failed' });
   }
 });
 
