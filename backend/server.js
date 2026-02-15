@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
+const nodemailer = require('nodemailer');
 
 dotenv.config();
 
@@ -22,6 +23,47 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
   console.log('☁️  Cloudinary configured:', process.env.CLOUDINARY_CLOUD_NAME);
 } else {
   console.log('⚠️  Cloudinary not configured - using local uploads');
+}
+
+// ============ WHATSAPP BİLDİRİM (CallMeBot API) ============
+async function sendWhatsApp(phone, message) {
+  try {
+    const apiKey = process.env.CALLMEBOT_API_KEY;
+    if (!apiKey || !phone) return;
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const encoded = encodeURIComponent(message);
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encoded}&apikey=${apiKey}`;
+    const response = await fetch(url);
+    console.log('📱 WhatsApp sent to', cleanPhone, '- status:', response.status);
+  } catch (err) {
+    console.error('WhatsApp send error:', err.message);
+  }
+}
+
+// ============ EMAIL GÖNDERİM ============
+const transporter = process.env.SMTP_HOST ? nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+}) : null;
+
+async function sendEmail(to, subject, html) {
+  try {
+    if (!transporter) return;
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      html,
+    });
+    console.log('📧 Email sent to', to);
+  } catch (err) {
+    console.error('Email send error:', err.message);
+  }
 }
 
 // DNS fix: Lokal DNS SRV çözemezse Google/Cloudflare DNS kullan
@@ -111,6 +153,7 @@ const AppointmentSchema = new mongoose.Schema({
   message: { type: String },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' },
   trackingCode: { type: String, unique: true },
+  reminderSent: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -330,6 +373,38 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
     });
 
     const newAppointment = await appointment.save();
+
+    // Arka planda bildirimler gönder (response'u bekletme)
+    const dateStr = new Date(date).toLocaleDateString('tr-TR');
+
+    // 1) Admin'e WhatsApp bildirim
+    const adminWhatsApp = process.env.ADMIN_WHATSAPP;
+    if (adminWhatsApp) {
+      const adminMsg = `🔔 *Yeni Randevu!*\n👤 ${name}\n📱 ${phone}\n🔧 ${service}\n📅 ${dateStr} - ${time}\n🚗 ${message || '-'}\n📋 Kod: ${trackingCode}`;
+      sendWhatsApp(adminWhatsApp, adminMsg);
+    }
+
+    // 2) Müşteriye onay e-postası (takip kodu ile)
+    if (email) {
+      sendEmail(email, `AES Garage - Randevu Onayı (${trackingCode})`,
+        `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#111;color:#fff;border:1px solid #333;">
+          <h2 style="font-weight:300;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:15px;">AES GARAGE</h2>
+          <p style="color:#ccc;">Merhaba <strong>${name}</strong>,</p>
+          <p style="color:#ccc;">Randevunuz başarıyla oluşturuldu.</p>
+          <div style="background:#1a1a1a;padding:15px;margin:15px 0;border-left:3px solid #dc2626;">
+            <p style="margin:5px 0;color:#ccc;">📅 <strong>${dateStr}</strong> - ${time}</p>
+            <p style="margin:5px 0;color:#ccc;">🔧 ${service}</p>
+          </div>
+          <div style="text-align:center;padding:20px;background:#dc2626;margin:15px 0;">
+            <p style="margin:0;font-size:12px;color:#fca5a5;">TAKİP KODUNUZ</p>
+            <p style="margin:5px 0;font-size:24px;font-weight:300;letter-spacing:3px;color:#fff;">${trackingCode}</p>
+          </div>
+          <p style="color:#666;font-size:12px;">Bu kodu saklayın. Randevunuzu takip etmek veya iptal etmek için kullanabilirsiniz.</p>
+          <p style="color:#666;font-size:12px;">aesgarage.net/track</p>
+        </div>`
+      );
+    }
+
     res.status(201).json(newAppointment);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -416,6 +491,27 @@ app.put('/api/appointments/cancel/:code', async (req, res) => {
 
     appointment.status = 'cancelled';
     await appointment.save();
+
+    // Müşteriye iptal bildirimi
+    const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
+    if (appointment.phone) {
+      sendWhatsApp(appointment.phone, `❌ AES Garage - Randevunuz iptal edildi.\n📅 ${dateStr} - ${appointment.time}\n🔧 ${appointment.service}\nYeni randevu için: aesgarage.net/appointment`);
+    }
+    if (appointment.email) {
+      sendEmail(appointment.email, 'AES Garage - Randevu İptali',
+        `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#111;color:#fff;">
+          <h2 style="font-weight:300;letter-spacing:2px;">AES GARAGE</h2>
+          <p style="color:#ccc;">Merhaba ${appointment.name},</p>
+          <p style="color:#ccc;">Aşağıdaki randevunuz iptal edilmiştir:</p>
+          <div style="background:#1a1a1a;padding:15px;margin:15px 0;border-left:3px solid #dc2626;">
+            <p style="margin:5px 0;color:#ccc;">📅 ${dateStr} - ${appointment.time}</p>
+            <p style="margin:5px 0;color:#ccc;">🔧 ${appointment.service}</p>
+          </div>
+          <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.net/appointment</p>
+        </div>`
+      );
+    }
+
     res.json({ message: 'Randevunuz iptal edildi', appointment });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -747,6 +843,40 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// ============ RANDEVU HATIRLATMA (1 gün kala) ============
+async function checkReminders() {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStart = new Date(tomorrow);
+    tomorrowStart.setHours(0, 0, 0, 0);
+    const tomorrowEnd = new Date(tomorrow);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
+    const appointments = await Appointment.find({
+      date: { $gte: tomorrowStart, $lte: tomorrowEnd },
+      status: { $ne: 'cancelled' },
+      reminderSent: { $ne: true }
+    });
+
+    for (const apt of appointments) {
+      const dateStr = new Date(apt.date).toLocaleDateString('tr-TR');
+      if (apt.phone) {
+        await sendWhatsApp(apt.phone, `⏰ AES Garage Hatırlatma\n\nMerhaba ${apt.name}, yarınki randevunuzu hatırlatmak isteriz:\n📅 ${dateStr} - ${apt.time}\n🔧 ${apt.service}\n\n📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul\n\nİptal/değişiklik için: aesgarage.net/track`);
+      }
+      apt.reminderSent = true;
+      await apt.save();
+      console.log('⏰ Reminder sent to', apt.name);
+    }
+  } catch (err) {
+    console.error('Reminder check error:', err.message);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Server http://localhost:${PORT} adresinde çalışıyor`);
+  // Her saat hatırlatmaları kontrol et
+  setInterval(checkReminders, 60 * 60 * 1000);
+  // İlk kontrolü 30sn sonra yap
+  setTimeout(checkReminders, 30000);
 });

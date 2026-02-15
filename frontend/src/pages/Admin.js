@@ -109,6 +109,7 @@ function Admin() {
     address: 'Alver Apt, İçerenköy, Küçükbakkalköy Yolu Cd. No:44/B, 34752 Ataşehir/İstanbul',
     whatsapp: '905551234567',
     workingHours: 'Pzt-Cmt: 09:00 - 18:00',
+    instagramUrl: '',
   });
 
   // ─── Ana Sayfa İçerik state'leri ───
@@ -236,6 +237,7 @@ function Admin() {
       if (contact.address) setContactInfo(prev => ({ ...prev, address: contact.address }));
       if (contact.whatsapp) setContactInfo(prev => ({ ...prev, whatsapp: contact.whatsapp }));
       if (contact.workingHours) setContactInfo(prev => ({ ...prev, workingHours: contact.workingHours }));
+      if (contact.instagramUrl) setContactInfo(prev => ({ ...prev, instagramUrl: contact.instagramUrl }));
 
       try { if (home.heroContent) setHeroContent(JSON.parse(home.heroContent)); } catch(e) {}
       try { if (home.sectionServices) setSectionServices(JSON.parse(home.sectionServices)); } catch(e) {}
@@ -361,6 +363,7 @@ function Admin() {
         saveSetting('address', contactInfo.address, 'contact'),
         saveSetting('whatsapp', contactInfo.whatsapp, 'contact'),
         saveSetting('workingHours', contactInfo.workingHours, 'contact'),
+        saveSetting('instagramUrl', contactInfo.instagramUrl || '', 'contact'),
       ]);
       alert('İletişim bilgileri kaydedildi!');
     } catch (err) { alert('Kaydetme hatası: ' + err.message); }
@@ -670,6 +673,10 @@ function Admin() {
                 <div>
                   <label className="block text-xs tracking-widest text-gray-500 mb-2">ÇALIŞMA SAATLERİ</label>
                   <input className={inputClass} value={contactInfo.workingHours} onChange={e => setContactInfo({ ...contactInfo, workingHours: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs tracking-widest text-gray-500 mb-2">INSTAGRAM SAYFASI</label>
+                  <input className={inputClass} value={contactInfo.instagramUrl} onChange={e => setContactInfo({ ...contactInfo, instagramUrl: e.target.value })} placeholder="https://instagram.com/aesgarage" />
                 </div>
               </div>
               <div>

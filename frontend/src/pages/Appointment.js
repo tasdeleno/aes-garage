@@ -538,9 +538,24 @@ function Appointment() {
           {formData.trackingCode && (
             <div className="border border-red-600/30 bg-red-600/5 p-6 mb-8">
               <p className="text-xs tracking-widest text-gray-500 mb-2">TAKİP KODUNUZ</p>
-              <p className="text-2xl font-light text-red-400 tracking-wider">{formData.trackingCode}</p>
-              <p className="text-xs text-gray-600 font-light mt-2">
-                Bu kodu saklayın.{' '}
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <p className="text-2xl font-light text-red-400 tracking-wider">{formData.trackingCode}</p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(formData.trackingCode);
+                    const btn = document.getElementById('copy-btn');
+                    if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'Kopyala'; }, 2000); }
+                  }}
+                  id="copy-btn"
+                  className="px-3 py-1.5 border border-red-600/30 text-red-400 text-xs tracking-wider hover:bg-red-600/10 transition-all"
+                >
+                  Kopyala
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 font-light">
+                Takip kodunuz e-posta adresinize de gönderildi.
+              </p>
+              <p className="text-xs text-gray-600 font-light mt-1">
                 <Link to="/track" className="text-red-400 hover:text-red-300 underline transition-colors">
                   Randevu Takip
                 </Link>{' '}
