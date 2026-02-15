@@ -195,7 +195,7 @@ function Home() {
   const [openFaq, setOpenFaq] = useState(null);
 
   const [heroContent, setHeroContent] = useState({
-    badge: 'PREMIUM SERVICE',
+    badge: 'AES GARAGE',
     titleLine1: 'MÜKEMMELLİK',
     titleLine2: 'İÇİN TASARLANDI',
     subtitle: 'Aracınız için en üst düzey bakım ve servis deneyimi',
