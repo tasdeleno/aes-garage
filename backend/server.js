@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 dotenv.config();
 
@@ -40,60 +40,34 @@ async function sendWhatsApp(phone, message) {
   }
 }
 
-// ============ EMAIL GÖNDERİM ============
-console.log('📧 SMTP Config:', {
-  host: process.env.SMTP_HOST || 'NOT SET',
-  port: process.env.SMTP_PORT || 'NOT SET',
-  secure: process.env.SMTP_SECURE || 'NOT SET',
-  user: process.env.SMTP_USER || 'NOT SET',
-  pass: process.env.SMTP_PASS ? '***SET***' : 'NOT SET',
-  from: process.env.SMTP_FROM || 'NOT SET',
-});
-
-let transporter = null;
-if (process.env.SMTP_HOST) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '465'),
-    secure: parseInt(process.env.SMTP_PORT || '465') === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  // SMTP bağlantı testi
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('❌ SMTP bağlantı hatası:', error.message);
-    } else {
-      console.log('✅ SMTP bağlantısı başarılı - Email gönderime hazır');
-    }
-  });
+// ============ EMAIL GÖNDERİM (Resend API) ============
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+if (resend) {
+  console.log('📧 Resend API configured');
 } else {
-  console.log('⚠️  SMTP yapılandırılmamış - Email gönderilmeyecek');
+  console.log('⚠️  RESEND_API_KEY tanımlı değil - Email gönderilmeyecek');
 }
 
 async function sendEmail(to, subject, html) {
   try {
-    if (!transporter) {
-      console.log('⚠️  Email gönderilemedi - transporter null (SMTP_HOST tanımlı değil)');
+    if (!resend) {
+      console.log('⚠️  Email gönderilemedi - RESEND_API_KEY tanımlı değil');
       return;
     }
     console.log('📧 Email gönderiliyor:', to, '-', subject);
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'AES Garage <onboarding@resend.dev>',
       to,
       subject,
       html,
     });
-    console.log('📧 Email sent to', to, '- messageId:', info.messageId);
+    if (error) {
+      console.error('❌ Email send error:', error.message);
+    } else {
+      console.log('📧 Email sent to', to, '- id:', data.id);
+    }
   } catch (err) {
     console.error('❌ Email send error:', err.message);
-    console.error('   Full error:', JSON.stringify(err, null, 2));
   }
 }
 
