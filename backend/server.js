@@ -610,14 +610,54 @@ app.get('/api/appointments/:id', authMiddleware, async (req, res) => {
 
 app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
   try {
+    const oldAppointment = await Appointment.findById(req.params.id);
+    if (!oldAppointment) {
+      return res.status(404).json({ message: 'Randevu bulunamadı' });
+    }
+    const oldStatus = oldAppointment.status;
+
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
-    if (!appointment) {
-      return res.status(404).json({ message: 'Randevu bulunamadı' });
+
+    // Durum değişikliğinde müşteriye bildirim gönder
+    const newStatus = appointment.status;
+    if (oldStatus !== newStatus && appointment.email) {
+      const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
+
+      if (newStatus === 'confirmed') {
+        sendEmail(appointment.email, `AES Garage - Randevunuz Onaylandı ✅`,
+          `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#111;color:#fff;border:1px solid #333;">
+            <h2 style="font-weight:300;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:15px;">AES GARAGE</h2>
+            <p style="color:#ccc;">Merhaba <strong>${appointment.name}</strong>,</p>
+            <p style="color:#22c55e;">Randevunuz onaylanmıştır!</p>
+            <div style="background:#1a1a1a;padding:15px;margin:15px 0;border-left:3px solid #22c55e;">
+              <p style="margin:5px 0;color:#ccc;">📅 <strong>${dateStr}</strong> - ${appointment.time}</p>
+              <p style="margin:5px 0;color:#ccc;">🔧 ${appointment.service}</p>
+              <p style="margin:5px 0;color:#ccc;">📋 Takip Kodu: ${appointment.trackingCode}</p>
+            </div>
+            <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
+            <p style="color:#666;font-size:12px;">İptal/değişiklik için: aesgarage.net/track</p>
+          </div>`
+        );
+      } else if (newStatus === 'cancelled') {
+        sendEmail(appointment.email, 'AES Garage - Randevunuz İptal Edildi',
+          `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#111;color:#fff;border:1px solid #333;">
+            <h2 style="font-weight:300;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:15px;">AES GARAGE</h2>
+            <p style="color:#ccc;">Merhaba <strong>${appointment.name}</strong>,</p>
+            <p style="color:#ef4444;">Aşağıdaki randevunuz iptal edilmiştir:</p>
+            <div style="background:#1a1a1a;padding:15px;margin:15px 0;border-left:3px solid #dc2626;">
+              <p style="margin:5px 0;color:#ccc;">📅 ${dateStr} - ${appointment.time}</p>
+              <p style="margin:5px 0;color:#ccc;">🔧 ${appointment.service}</p>
+            </div>
+            <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.net/appointment</p>
+          </div>`
+        );
+      }
     }
+
     res.json(appointment);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -861,8 +901,26 @@ async function checkReminders() {
 
     for (const apt of appointments) {
       const dateStr = new Date(apt.date).toLocaleDateString('tr-TR');
+      // WhatsApp hatırlatma (CallMeBot aktifse)
       if (apt.phone) {
         await sendWhatsApp(apt.phone, `⏰ AES Garage Hatırlatma\n\nMerhaba ${apt.name}, yarınki randevunuzu hatırlatmak isteriz:\n📅 ${dateStr} - ${apt.time}\n🔧 ${apt.service}\n\n📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul\n\nİptal/değişiklik için: aesgarage.net/track`);
+      }
+      // Email hatırlatma
+      if (apt.email) {
+        await sendEmail(apt.email, `AES Garage - Randevu Hatırlatma (${apt.trackingCode})`,
+          `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;background:#111;color:#fff;border:1px solid #333;">
+            <h2 style="font-weight:300;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:15px;">AES GARAGE</h2>
+            <p style="color:#ccc;">Merhaba <strong>${apt.name}</strong>,</p>
+            <p style="color:#ccc;">Yarınki randevunuzu hatırlatmak isteriz:</p>
+            <div style="background:#1a1a1a;padding:15px;margin:15px 0;border-left:3px solid #f59e0b;">
+              <p style="margin:5px 0;color:#ccc;">📅 <strong>${dateStr}</strong> - ${apt.time}</p>
+              <p style="margin:5px 0;color:#ccc;">🔧 ${apt.service}</p>
+              <p style="margin:5px 0;color:#ccc;">📋 Takip Kodu: ${apt.trackingCode}</p>
+            </div>
+            <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
+            <p style="color:#666;font-size:12px;">İptal veya değişiklik için: aesgarage.net/track</p>
+          </div>`
+        );
       }
       apt.reminderSent = true;
       await apt.save();
