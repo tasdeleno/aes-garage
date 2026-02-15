@@ -62,30 +62,142 @@ function TrackingBox() {
   );
 }
 
+function CalendarPicker({ selectedDate, onDateSelect }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (month, year) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Pazartesi = 0
+  };
+
+  const prevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
+    else setCurrentMonth(currentMonth - 1);
+  };
+
+  const nextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
+    else setCurrentMonth(currentMonth + 1);
+  };
+
+  const isDisabled = (day) => {
+    const date = new Date(currentYear, currentMonth, day);
+    date.setHours(0, 0, 0, 0);
+    if (date < today) return true; // Geçmiş tarih
+    if (date.getDay() === 0) return true; // Pazar
+    return false;
+  };
+
+  const isSelected = (day) => {
+    if (!selectedDate) return false;
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return selectedDate === dateStr;
+  };
+
+  const isToday = (day) => {
+    return day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+  };
+
+  const handleDayClick = (day) => {
+    if (isDisabled(day)) return;
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    onDateSelect(dateStr);
+  };
+
+  const canGoPrev = !(currentMonth === today.getMonth() && currentYear === today.getFullYear());
+
+  const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+  const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div className="border border-dark-900 p-4 sm:p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <button type="button" onClick={prevMonth} disabled={!canGoPrev}
+          className={`w-9 h-9 flex items-center justify-center border transition-all ${canGoPrev ? 'border-dark-800 hover:border-white text-gray-400 hover:text-white' : 'border-dark-900 text-gray-800 cursor-not-allowed'}`}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <span className="text-sm font-light tracking-wider">{months[currentMonth]} {currentYear}</span>
+        <button type="button" onClick={nextMonth}
+          className="w-9 h-9 flex items-center justify-center border border-dark-800 hover:border-white text-gray-400 hover:text-white transition-all">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {days.map(d => (
+          <div key={d} className={`text-center text-[10px] tracking-wider font-light py-1 ${d === 'Paz' ? 'text-red-500/50' : 'text-gray-600'}`}>{d}</div>
+        ))}
+      </div>
+
+      {/* Days Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, idx) => {
+          if (!day) return <div key={`empty-${idx}`} />;
+          const disabled = isDisabled(day);
+          const selected = isSelected(day);
+          const todayMark = isToday(day);
+          const isSunday = new Date(currentYear, currentMonth, day).getDay() === 0;
+
+          return (
+            <button
+              key={day}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleDayClick(day)}
+              className={`relative aspect-square flex items-center justify-center text-sm font-light transition-all touch-manipulation
+                ${disabled ? 'text-gray-800 cursor-not-allowed' : ''}
+                ${disabled && isSunday ? 'text-red-900/40' : ''}
+                ${!disabled && !selected ? 'text-gray-300 hover:bg-white/10 hover:text-white' : ''}
+                ${selected ? 'bg-white text-black font-normal' : ''}
+              `}
+            >
+              {day}
+              {todayMark && !selected && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-dark-900">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+          <span className="text-[10px] text-gray-600 font-light">Bugün</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-red-900/50 font-light">Paz</span>
+          <span className="text-[10px] text-gray-600 font-light">Kapalı</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep }) {
   const [availability, setAvailability] = useState({});
   const [dateError, setDateError] = useState('');
 
   const allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
-  const handleDateChange = async (e) => {
-    const date = e.target.value;
-    handleChange(e);
+  const handleDateSelect = async (dateStr) => {
+    setFormData(prev => ({ ...prev, date: dateStr, time: '' }));
     setDateError('');
-    setFormData(prev => ({ ...prev, time: '' }));
-
-    if (!date) return;
-
-    // Pazar günü kontrolü
-    const selectedDate = new Date(date);
-    if (selectedDate.getUTCDay() === 0) {
-      setDateError('Pazar günü kapalıyız. Lütfen başka bir gün seçin.');
-      return;
-    }
 
     // Slot müsaitlik kontrolü
     try {
-      const res = await axios.get(`${API}/api/appointments/availability?date=${date}`);
+      const res = await axios.get(`${API}/api/appointments/availability?date=${dateStr}`);
       setAvailability(res.data);
     } catch (err) {
       console.error('Availability check failed:', err);
@@ -98,16 +210,8 @@ function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep 
       <p className="text-sm text-gray-500 font-light">Pazartesi - Cumartesi, 09:00 - 18:00 arası hizmet vermekteyiz.</p>
 
       <div>
-        <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">TARİH</label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleDateChange}
-          min={new Date().toISOString().split('T')[0]}
-          className="w-full bg-transparent border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
-          required
-        />
+        <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">TARİH SEÇİN</label>
+        <CalendarPicker selectedDate={formData.date} onDateSelect={handleDateSelect} />
         {dateError && <p className="text-red-400 text-sm font-light mt-2">{dateError}</p>}
       </div>
 
