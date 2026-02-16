@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "AES Garage",
+  "name": "AES Garage - Premium Arac Bakim & Servis",
+  "description": "Istanbul Atasehir'de profesyonel arac bakim ve servis hizmetleri. Periyodik bakim, motor bakimi, fren sistemi, lastik degisimi.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -18,8 +19,10 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#000000",
+  "lang": "tr",
+  "categories": ["auto", "business"]
 }

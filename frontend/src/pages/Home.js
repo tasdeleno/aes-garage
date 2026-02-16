@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -342,8 +343,56 @@ function Home() {
     setOpenFaq(prev => prev === index ? null : index);
   }, []);
 
+  const localBusinessSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AutoRepair',
+    name: 'AES Garage',
+    description: 'Istanbul Atasehir\'de premium arac bakim ve servis merkezi.',
+    url: 'https://aesgarage.com',
+    telephone: '+90-555-123-4567',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Kucukbakkalkoy Yolu Cd. No:44/B',
+      addressLocality: 'Atasehir',
+      addressRegion: 'Istanbul',
+      postalCode: '34750',
+      addressCountry: 'TR'
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: 40.9923,
+      longitude: 29.1244
+    },
+    openingHoursSpecification: [
+      { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '09:00', closes: '18:00' }
+    ],
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: reviewsMeta.score,
+      reviewCount: reviewsMeta.count,
+      bestRating: '5'
+    },
+    priceRange: '$$'
+  };
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(item => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
+    }))
+  };
+
   return (
     <div className="min-h-screen bg-black text-white grain-overlay">
+      <SEOHead
+        title="Premium Arac Bakim & Servis"
+        description="AES Garage - Istanbul Atasehir'de premium arac bakim ve servis merkezi. Periyodik bakim, motor bakimi, fren sistemi, lastik degisimi ve daha fazlasi."
+        path="/"
+        schema={[localBusinessSchema, faqSchema]}
+      />
 
       {/* ═══ HERO ═══ */}
       <section className="relative h-[100svh] flex items-center justify-center overflow-hidden">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -124,6 +125,11 @@ function TrackAppointment() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 px-4 sm:px-6 pb-12 sm:pb-20">
+      <SEOHead
+        title="Randevu Takip"
+        description="AES Garage randevu takip sistemi. Takip kodunuz ile randevunuzun durumunu sorgulayabilirsiniz."
+        path="/track"
+      />
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">

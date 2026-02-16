@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -745,6 +746,11 @@ function Appointment() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
+      <SEOHead
+        title="Online Randevu"
+        description="AES Garage online randevu sistemi. Arac bakim ve servis randevunuzu hizlica alin. Pazartesi-Cumartesi 09:00-18:00."
+        path="/appointment"
+      />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 md:mb-16">

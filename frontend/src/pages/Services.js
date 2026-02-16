@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -103,8 +104,33 @@ function Services() {
     return 'Fiyat için iletişime geçin';
   };
 
+  const serviceSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AutoRepair',
+    name: 'AES Garage',
+    url: 'https://aesgarage.com/services',
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Arac Bakim Hizmetleri',
+      itemListElement: [
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Periyodik Bakim', description: 'Motor yagi, filtre degisimi ve genel kontrol' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Motor Bakimi', description: 'Motor revizyonu, kayis degisimi, sogutma sistemi' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Fren Sistemi', description: 'Fren balatasi, disk, hidrolik ve ABS bakimi' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Lastik Servisi', description: 'Lastik degisimi, balans, rot ayari' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Elektrik & Elektronik', description: 'Aku, alternatör, starter ve arac elektrigi' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Klima Bakimi', description: 'Klima gazi dolumu ve sistem bakimi' } },
+      ]
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <SEOHead
+        title="Hizmetlerimiz"
+        description="AES Garage hizmetleri - Periyodik bakim, motor bakimi, fren sistemi, lastik servisi, elektrik-elektronik ve klima bakimi. Orijinal yedek parca garantisi."
+        path="/services"
+        schema={serviceSchema}
+      />
       <section className="relative h-[50vh] sm:h-[60vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black z-10"></div>

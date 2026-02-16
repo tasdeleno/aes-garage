@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 // ─── Hooks ───
 function useReveal(threshold = 0.15) {
@@ -120,6 +121,11 @@ function About() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <SEOHead
+        title="Hakkimizda"
+        description="AES Garage - 15+ yillik tecrube ile Istanbul Atasehir'de profesyonel arac bakim ve servis. Uzman kadro, orijinal yedek parca, musteriye ozel cozumler."
+        path="/about"
+      />
       {/* Hero */}
       <section className="relative h-[50vh] sm:h-[60vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0" style={{ transform: `translateY(${offset}px)` }}>

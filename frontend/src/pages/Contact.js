@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -65,6 +66,20 @@ function Contact() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 px-4 sm:px-6 pb-12 sm:pb-20">
+      <SEOHead
+        title="Iletisim"
+        description="AES Garage iletisim bilgileri. Adres: Kucukbakkalkoy Yolu Cd. No:44/B, Atasehir/Istanbul. Randevu ve bilgi icin bizi arayin."
+        path="/contact"
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'AutoRepair',
+          name: 'AES Garage',
+          telephone: '+90-555-123-4567',
+          email: 'bilgi@aesgarage.com',
+          address: { '@type': 'PostalAddress', streetAddress: 'Kucukbakkalkoy Yolu Cd. No:44/B', addressLocality: 'Atasehir', addressRegion: 'Istanbul', postalCode: '34750', addressCountry: 'TR' },
+          openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '09:00', closes: '18:00' }]
+        }}
+      />
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-light tracking-tight mb-6">İLETİŞİM</h1>

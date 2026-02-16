@@ -1,8 +1,14 @@
 import React from 'react';
+import SEOHead from '../components/SEOHead';
 
 function KVKK() {
   return (
     <div className="min-h-screen bg-black text-white pt-32 px-6 pb-20">
+      <SEOHead
+        title="KVKK Aydinlatma Metni"
+        description="AES Garage KVKK Aydinlatma Metni. Kisisel verilerin korunmasi kanunu kapsaminda haklariniz ve veri isleme politikamiz."
+        path="/kvkk"
+      />
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-light tracking-tight mb-6">KVKK AYDINLATMA METNİ</h1>

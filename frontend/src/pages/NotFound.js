@@ -1,9 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 function NotFound() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+      <SEOHead
+        title="Sayfa Bulunamadi - 404"
+        description="Aradiginiz sayfa bulunamadi. AES Garage ana sayfasina donerek devam edebilirsiniz."
+        path="/404"
+      />
       <div className="text-center max-w-2xl">
         <div className="text-[150px] md:text-[200px] font-light leading-none text-dark-800 select-none">404</div>
         <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-4 -mt-8">SAYFA BULUNAMADI</h1>

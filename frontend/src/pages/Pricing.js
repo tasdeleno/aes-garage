@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 function Pricing() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -134,6 +135,11 @@ function Pricing() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <SEOHead
+        title="Fiyatlar"
+        description="AES Garage seffaf fiyatlandirma. Periyodik bakim, motor bakimi, fren sistemi, lastik servisi fiyatlari. Uygun fiyat, kaliteli hizmet."
+        path="/pricing"
+      />
       {/* Hero Section */}
       <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">

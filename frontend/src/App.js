@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import axios from 'axios';
 import Home from './pages/Home';
 import Services from './pages/Services';
@@ -192,6 +193,7 @@ function App() {
   }, []);
 
   return (
+    <HelmetProvider>
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="min-h-screen bg-black text-white">
         <ScrollToTop />
@@ -279,6 +281,7 @@ function App() {
         </footer>
       </div>
     </Router>
+    </HelmetProvider>
   );
 }
 
