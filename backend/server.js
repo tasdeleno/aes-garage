@@ -880,18 +880,19 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ============ HEALTH CHECK (Keep-alive for Render free plan) ============
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // ============ PRODUCTION: Frontend Static Serving ============
+// NOT: Bu catch-all route en sonda olmalı, yoksa API route'larını yakalar
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   app.get('{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
   });
 }
-
-// ============ HEALTH CHECK (Keep-alive for Render free plan) ============
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // ============ RANDEVU HATIRLATMA (1 gün kala) ============
 async function checkReminders() {
