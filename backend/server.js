@@ -880,11 +880,6 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// ============ HEALTH CHECK (Keep-alive for Render free plan) ============
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 // ============ PRODUCTION: Frontend Static Serving ============
 // NOT: Bu catch-all route en sonda olmalı, yoksa API route'larını yakalar
 if (process.env.NODE_ENV === 'production') {
@@ -949,20 +944,4 @@ app.listen(PORT, () => {
   // İlk kontrolü 30sn sonra yap
   setTimeout(checkReminders, 30000);
 
-  // Keep-alive: Render free plan uyumasın diye her 14 dk self-ping
-  // Sadece 08:00-00:00 (TR saati, UTC+3) arası aktif → ~480 saat/ay (limit: 750)
-  if (process.env.NODE_ENV === 'production') {
-    const SITE_URL = process.env.CORS_ORIGIN || 'https://aesgarage.com';
-    setInterval(async () => {
-      const hourTR = (new Date().getUTCHours() + 3) % 24;
-      if (hourTR >= 8 && hourTR < 24) {
-        try {
-          const res = await fetch(`${SITE_URL}/api/health`);
-          console.log(`♻️  Keep-alive ping - ${res.status}`);
-        } catch (err) {
-          console.error('Keep-alive ping failed:', err.message);
-        }
-      }
-    }, 14 * 60 * 1000); // 14 dakika
-  }
 });

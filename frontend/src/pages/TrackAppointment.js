@@ -127,8 +127,9 @@ function TrackAppointment() {
     <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 px-4 sm:px-6 pb-12 sm:pb-20">
       <SEOHead
         title="Randevu Takip"
-        description="AES Garage randevu takip sistemi. Takip kodunuz ile randevunuzun durumunu sorgulayabilirsiniz."
+        description="AES Garage randevu takip sistemi. Takip kodunuz ile randevunuzun durumunu sorgulayabilir, tarih değiştirebilir veya iptal edebilirsiniz."
         path="/track"
+        keywords="randevu takip, AES Garage randevu sorgulama, randevu iptal, randevu erteleme"
       />
       <div className="max-w-2xl mx-auto">
         {/* Header */}

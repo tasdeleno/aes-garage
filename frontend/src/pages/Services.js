@@ -111,14 +111,15 @@ function Services() {
     url: 'https://aesgarage.com/services',
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
-      name: 'Arac Bakim Hizmetleri',
+      name: 'Araç Bakım Hizmetleri',
       itemListElement: [
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Periyodik Bakim', description: 'Motor yagi, filtre degisimi ve genel kontrol' } },
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Motor Bakimi', description: 'Motor revizyonu, kayis degisimi, sogutma sistemi' } },
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Fren Sistemi', description: 'Fren balatasi, disk, hidrolik ve ABS bakimi' } },
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Lastik Servisi', description: 'Lastik degisimi, balans, rot ayari' } },
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Elektrik & Elektronik', description: 'Aku, alternatör, starter ve arac elektrigi' } },
-        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Klima Bakimi', description: 'Klima gazi dolumu ve sistem bakimi' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Periyodik Bakım', description: 'Motor yağı, filtre değişimi ve genel kontrol' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Motor Bakımı', description: 'Motor revizyonu, kayış değişimi, soğutma sistemi' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Fren Sistemi', description: 'Fren balatası, disk, hidrolik ve ABS bakımı' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Lastik Servisi', description: 'Lastik değişimi, balans, rot ayarı' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Elektrik & Elektronik', description: 'Akü, alternatör, starter ve araç elektriği' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Klima Bakımı', description: 'Klima gazı dolumu ve sistem bakımı' } },
+        { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Kaporta & Boya', description: 'Lokal boya, tam boya, göçük düzeltme ve far parlatma' } },
       ]
     }
   };
@@ -127,8 +128,9 @@ function Services() {
     <div className="min-h-screen bg-black text-white">
       <SEOHead
         title="Hizmetlerimiz"
-        description="AES Garage hizmetleri - Periyodik bakim, motor bakimi, fren sistemi, lastik servisi, elektrik-elektronik ve klima bakimi. Orijinal yedek parca garantisi."
+        description="AES Garage hizmetleri - Periyodik bakım, motor bakımı, fren sistemi, lastik servisi, elektrik-elektronik, klima bakımı ve kaporta boya. Orijinal yedek parça garantisi ile profesyonel araç bakım."
         path="/services"
+        keywords="araç bakım hizmetleri, periyodik bakım, motor bakımı, fren bakımı, lastik değişimi, klima bakımı, kaporta boya, oto elektrik, Ataşehir oto servis"
         schema={serviceSchema}
       />
       <section className="relative h-[50vh] sm:h-[60vh] flex items-center justify-center overflow-hidden">

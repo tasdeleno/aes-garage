@@ -5,9 +5,10 @@ function KVKK() {
   return (
     <div className="min-h-screen bg-black text-white pt-32 px-6 pb-20">
       <SEOHead
-        title="KVKK Aydinlatma Metni"
-        description="AES Garage KVKK Aydinlatma Metni. Kisisel verilerin korunmasi kanunu kapsaminda haklariniz ve veri isleme politikamiz."
+        title="KVKK Aydınlatma Metni"
+        description="AES Garage KVKK Aydınlatma Metni. 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında haklarınız ve veri işleme politikamız."
         path="/kvkk"
+        keywords="KVKK, kişisel verilerin korunması, aydınlatma metni, AES Garage gizlilik"
       />
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">

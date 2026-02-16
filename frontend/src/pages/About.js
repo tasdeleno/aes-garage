@@ -122,9 +122,10 @@ function About() {
   return (
     <div className="min-h-screen bg-black text-white">
       <SEOHead
-        title="Hakkimizda"
-        description="AES Garage - 15+ yillik tecrube ile Istanbul Atasehir'de profesyonel arac bakim ve servis. Uzman kadro, orijinal yedek parca, musteriye ozel cozumler."
+        title="Hakkımızda"
+        description="AES Garage - 15+ yıllık tecrübe ile İstanbul Ataşehir'de profesyonel araç bakım ve servis. Uzman kadro, orijinal yedek parça, müşteriye özel çözümler. Güvenilir oto servis."
         path="/about"
+        keywords="AES Garage hakkında, oto servis Ataşehir, güvenilir araç servisi, uzman oto tamirci, İstanbul araç bakım"
       />
       {/* Hero */}
       <section className="relative h-[50vh] sm:h-[60vh] flex items-center justify-center overflow-hidden">

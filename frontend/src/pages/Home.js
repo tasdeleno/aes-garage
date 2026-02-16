@@ -347,15 +347,16 @@ function Home() {
     '@context': 'https://schema.org',
     '@type': 'AutoRepair',
     name: 'AES Garage',
-    description: 'Istanbul Atasehir\'de premium arac bakim ve servis merkezi.',
+    description: 'İstanbul Ataşehir\'de premium araç bakım ve servis merkezi. Periyodik bakım, motor bakımı, fren sistemi, lastik değişimi.',
     url: 'https://aesgarage.com',
     telephone: '+90-555-123-4567',
+    email: 'bilgi@aesgarage.com',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Kucukbakkalkoy Yolu Cd. No:44/B',
-      addressLocality: 'Atasehir',
-      addressRegion: 'Istanbul',
-      postalCode: '34750',
+      streetAddress: 'Küçükbakkalköy Yolu Cd. No:44/B',
+      addressLocality: 'Ataşehir',
+      addressRegion: 'İstanbul',
+      postalCode: '34752',
       addressCountry: 'TR'
     },
     geo: {
@@ -372,7 +373,9 @@ function Home() {
       reviewCount: reviewsMeta.count,
       bestRating: '5'
     },
-    priceRange: '$$'
+    priceRange: '$$',
+    image: 'https://aesgarage.com/logo192.png',
+    sameAs: []
   };
 
   const faqSchema = {
@@ -388,9 +391,10 @@ function Home() {
   return (
     <div className="min-h-screen bg-black text-white grain-overlay">
       <SEOHead
-        title="Premium Arac Bakim & Servis"
-        description="AES Garage - Istanbul Atasehir'de premium arac bakim ve servis merkezi. Periyodik bakim, motor bakimi, fren sistemi, lastik degisimi ve daha fazlasi."
+        title="Premium Araç Bakım & Servis"
+        description="AES Garage - İstanbul Ataşehir'de premium araç bakım ve servis merkezi. Periyodik bakım, motor bakımı, fren sistemi, lastik değişimi, kaporta boya ve daha fazlası. Uzman kadro, orijinal yedek parça garantisi."
         path="/"
+        keywords="oto servis, araç bakım, İstanbul, Ataşehir, periyodik bakım, motor bakımı, fren bakımı, lastik değişimi, kaporta boya, AES Garage, oto tamir, araç servis, oto elektrik, klima bakımı"
         schema={[localBusinessSchema, faqSchema]}
       />
 

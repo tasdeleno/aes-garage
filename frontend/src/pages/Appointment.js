@@ -748,8 +748,9 @@ function Appointment() {
     <div className="min-h-screen bg-black text-white pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6">
       <SEOHead
         title="Online Randevu"
-        description="AES Garage online randevu sistemi. Arac bakim ve servis randevunuzu hizlica alin. Pazartesi-Cumartesi 09:00-18:00."
+        description="AES Garage online randevu sistemi. Araç bakım ve servis randevunuzu hızlıca alın. Pazartesi-Cumartesi 09:00-18:00. Ücretsiz muayene, kolay randevu."
         path="/appointment"
+        keywords="oto servis randevu, online randevu, araç bakım randevu, İstanbul oto servis randevu, AES Garage randevu"
       />
       <div className="max-w-4xl mx-auto">
         {/* Header */}

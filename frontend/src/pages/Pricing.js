@@ -137,8 +137,9 @@ function Pricing() {
     <div className="min-h-screen bg-black text-white">
       <SEOHead
         title="Fiyatlar"
-        description="AES Garage seffaf fiyatlandirma. Periyodik bakim, motor bakimi, fren sistemi, lastik servisi fiyatlari. Uygun fiyat, kaliteli hizmet."
+        description="AES Garage şeffaf fiyatlandırma. Periyodik bakım, motor bakımı, fren sistemi, lastik servisi, kaporta boya fiyatları. Uygun fiyat, kaliteli hizmet. Tüm fiyatlar KDV dahildir."
         path="/pricing"
+        keywords="oto servis fiyatları, periyodik bakım fiyat, motor bakımı fiyat, fren bakımı fiyat, lastik değişimi fiyat, kaporta boya fiyat, Ataşehir oto servis fiyat"
       />
       {/* Hero Section */}
       <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center overflow-hidden">

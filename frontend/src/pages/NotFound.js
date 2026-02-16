@@ -6,8 +6,8 @@ function NotFound() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
       <SEOHead
-        title="Sayfa Bulunamadi - 404"
-        description="Aradiginiz sayfa bulunamadi. AES Garage ana sayfasina donerek devam edebilirsiniz."
+        title="Sayfa Bulunamadı - 404"
+        description="Aradığınız sayfa bulunamadı. AES Garage ana sayfasına dönerek devam edebilirsiniz."
         path="/404"
       />
       <div className="text-center max-w-2xl">
