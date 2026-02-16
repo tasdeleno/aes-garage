@@ -888,6 +888,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// ============ HEALTH CHECK (Keep-alive for Render free plan) ============
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // ============ RANDEVU HATIRLATMA (1 gün kala) ============
 async function checkReminders() {
   try {
@@ -942,4 +947,17 @@ app.listen(PORT, () => {
   setInterval(checkReminders, 60 * 60 * 1000);
   // İlk kontrolü 30sn sonra yap
   setTimeout(checkReminders, 30000);
+
+  // Keep-alive: Render free plan uyumasın diye her 14 dk self-ping
+  if (process.env.NODE_ENV === 'production') {
+    const SITE_URL = process.env.CORS_ORIGIN || 'https://aesgarage.com';
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${SITE_URL}/api/health`);
+        console.log(`♻️  Keep-alive ping - ${res.status}`);
+      } catch (err) {
+        console.error('Keep-alive ping failed:', err.message);
+      }
+    }, 14 * 60 * 1000); // 14 dakika
+  }
 });
