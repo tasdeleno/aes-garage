@@ -405,7 +405,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
             <p style="margin:5px 0;font-size:24px;font-weight:300;letter-spacing:3px;color:#fff;">${trackingCode}</p>
           </div>
           <p style="color:#666;font-size:12px;">Bu kodu saklayın. Randevunuzu takip etmek veya iptal etmek için kullanabilirsiniz.</p>
-          <p style="color:#666;font-size:12px;">aesgarage.com/track</p>
+          <p style="color:#666;font-size:12px;">aesgarage.com/randevu-takip</p>
         </div>`
       );
     }
@@ -500,7 +500,7 @@ app.put('/api/appointments/cancel/:code', async (req, res) => {
     // Müşteriye iptal bildirimi
     const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
     if (appointment.phone) {
-      sendWhatsApp(appointment.phone, `❌ AES Garage - Randevunuz iptal edildi.\n📅 ${dateStr} - ${appointment.time}\n🔧 ${appointment.service}\nYeni randevu için: aesgarage.com/appointment`);
+      sendWhatsApp(appointment.phone, `❌ AES Garage - Randevunuz iptal edildi.\n📅 ${dateStr} - ${appointment.time}\n🔧 ${appointment.service}\nYeni randevu için: aesgarage.com/randevu`);
     }
     if (appointment.email) {
       sendEmail(appointment.email, 'AES Garage - Randevu İptali',
@@ -512,7 +512,7 @@ app.put('/api/appointments/cancel/:code', async (req, res) => {
             <p style="margin:5px 0;color:#ccc;">📅 ${dateStr} - ${appointment.time}</p>
             <p style="margin:5px 0;color:#ccc;">🔧 ${appointment.service}</p>
           </div>
-          <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/appointment</p>
+          <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/randevu</p>
         </div>`
       );
     }
@@ -644,7 +644,7 @@ app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
               <p style="margin:5px 0;color:#ccc;">📋 Takip Kodu: ${appointment.trackingCode}</p>
             </div>
             <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
-            <p style="color:#666;font-size:12px;">İptal/değişiklik için: aesgarage.com/track</p>
+            <p style="color:#666;font-size:12px;">İptal/değişiklik için: aesgarage.com/randevu-takip</p>
           </div>`
         );
       } else if (newStatus === 'cancelled') {
@@ -657,7 +657,7 @@ app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
               <p style="margin:5px 0;color:#ccc;">📅 ${dateStr} - ${appointment.time}</p>
               <p style="margin:5px 0;color:#ccc;">🔧 ${appointment.service}</p>
             </div>
-            <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/appointment</p>
+            <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/randevu</p>
           </div>`
         );
       }
@@ -880,6 +880,22 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ============ SEO: Eski URL'lerden Yeni Türkçe URL'lere 301 Redirect ============
+const urlRedirects = {
+  '/about': '/hakkimizda',
+  '/services': '/hizmetler',
+  '/pricing': '/fiyatlar',
+  '/appointment': '/randevu',
+  '/contact': '/iletisim',
+  '/track': '/randevu-takip',
+};
+
+Object.entries(urlRedirects).forEach(([oldPath, newPath]) => {
+  app.get(oldPath, (req, res) => {
+    res.redirect(301, newPath);
+  });
+});
+
 // ============ PRODUCTION: Frontend Static Serving ============
 // NOT: Bu catch-all route en sonda olmalı, yoksa API route'larını yakalar
 if (process.env.NODE_ENV === 'production') {
@@ -909,7 +925,7 @@ async function checkReminders() {
       const dateStr = new Date(apt.date).toLocaleDateString('tr-TR');
       // WhatsApp hatırlatma (CallMeBot aktifse)
       if (apt.phone) {
-        await sendWhatsApp(apt.phone, `⏰ AES Garage Hatırlatma\n\nMerhaba ${apt.name}, yarınki randevunuzu hatırlatmak isteriz:\n📅 ${dateStr} - ${apt.time}\n🔧 ${apt.service}\n\n📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul\n\nİptal/değişiklik için: aesgarage.com/track`);
+        await sendWhatsApp(apt.phone, `⏰ AES Garage Hatırlatma\n\nMerhaba ${apt.name}, yarınki randevunuzu hatırlatmak isteriz:\n📅 ${dateStr} - ${apt.time}\n🔧 ${apt.service}\n\n📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul\n\nİptal/değişiklik için: aesgarage.com/randevu-takip`);
       }
       // Email hatırlatma
       if (apt.email) {
@@ -924,7 +940,7 @@ async function checkReminders() {
               <p style="margin:5px 0;color:#ccc;">📋 Takip Kodu: ${apt.trackingCode}</p>
             </div>
             <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
-            <p style="color:#666;font-size:12px;">İptal veya değişiklik için: aesgarage.com/track</p>
+            <p style="color:#666;font-size:12px;">İptal veya değişiklik için: aesgarage.com/randevu-takip</p>
           </div>`
         );
       }

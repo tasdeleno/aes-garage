@@ -19,7 +19,7 @@ function NotFound() {
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             <span className="relative text-sm tracking-[0.2em] font-light">ANA SAYFA</span>
           </Link>
-          <Link to="/contact" className="px-10 py-4 border border-dark-800 hover:border-white transition-colors text-sm tracking-[0.2em] font-light">
+          <Link to="/iletisim" className="px-10 py-4 border border-dark-800 hover:border-white transition-colors text-sm tracking-[0.2em] font-light">
             İLETİŞİM
           </Link>
         </div>

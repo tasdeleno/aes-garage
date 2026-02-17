@@ -19,7 +19,7 @@ function TrackingBox() {
 
     try {
       await axios.get(`${API}/api/appointments/track/${trackCode.trim()}`);
-      navigate(`/track?code=${encodeURIComponent(trackCode.trim())}`);
+      navigate(`/randevu-takip?code=${encodeURIComponent(trackCode.trim())}`);
     } catch (err) {
       setTrackError(err.response?.data?.message || 'Randevu bulunamadı. Takip kodunuzu kontrol edin.');
       setTrackLoading(false);
@@ -661,7 +661,7 @@ function Appointment() {
                 Takip kodunuz e-posta adresinize de gönderildi.
               </p>
               <p className="text-xs text-gray-600 font-light mt-1">
-                <Link to="/track" className="text-red-400 hover:text-red-300 underline transition-colors">
+                <Link to="/randevu-takip" className="text-red-400 hover:text-red-300 underline transition-colors">
                   Randevu Takip
                 </Link>{' '}
                 sayfasından randevunuzu sorgulayabilir veya iptal edebilirsiniz.
@@ -734,7 +734,7 @@ function Appointment() {
             YENİ RANDEVU OLUŞTUR
           </button>
           <Link
-            to="/track"
+            to="/randevu-takip"
             className="inline-block px-12 py-4 border border-dark-900 text-gray-400 hover:border-white hover:text-white transition-all duration-300 font-light tracking-widest text-sm"
           >
             RANDEVU TAKİP
@@ -749,7 +749,7 @@ function Appointment() {
       <SEOHead
         title="Online Randevu"
         description="AES Garage online randevu sistemi. Araç bakım ve servis randevunuzu hızlıca alın. Pazartesi-Cumartesi 09:00-18:00. Ücretsiz muayene, kolay randevu."
-        path="/appointment"
+        path="/randevu"
         keywords="oto servis randevu, online randevu, araç bakım randevu, İstanbul oto servis randevu, AES Garage randevu"
       />
       <div className="max-w-4xl mx-auto">

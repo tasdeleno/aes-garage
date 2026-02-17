@@ -108,7 +108,7 @@ function Services() {
     '@context': 'https://schema.org',
     '@type': 'AutoRepair',
     name: 'AES Garage',
-    url: 'https://aesgarage.com/services',
+    url: 'https://aesgarage.com/hizmetler',
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Araç Bakım Hizmetleri',
@@ -129,7 +129,7 @@ function Services() {
       <SEOHead
         title="Hizmetlerimiz"
         description="AES Garage hizmetleri - Periyodik bakım, motor bakımı, fren sistemi, lastik servisi, elektrik-elektronik, klima bakımı ve kaporta boya. Orijinal yedek parça garantisi ile profesyonel araç bakım."
-        path="/services"
+        path="/hizmetler"
         keywords="araç bakım hizmetleri, periyodik bakım, motor bakımı, fren bakımı, lastik değişimi, klima bakımı, kaporta boya, oto elektrik, Ataşehir oto servis"
         schema={serviceSchema}
       />
@@ -225,7 +225,7 @@ function Services() {
                   )}
 
                   <Link
-                    to="/appointment"
+                    to="/randevu"
                     className="group/btn mt-4 sm:mt-6 w-full py-3 sm:py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
                   >
                     <span className="text-xs sm:text-sm font-light tracking-widest">RANDEVU AL</span>
@@ -253,7 +253,7 @@ function Services() {
             uzman ekibimizle görüşün
           </p>
           <Link
-            to="/appointment"
+            to="/randevu"
             className="inline-block group relative overflow-hidden px-8 sm:px-16 py-4 sm:py-5 border border-red-600"
           >
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>

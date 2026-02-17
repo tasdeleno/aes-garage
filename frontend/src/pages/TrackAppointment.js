@@ -128,7 +128,7 @@ function TrackAppointment() {
       <SEOHead
         title="Randevu Takip"
         description="AES Garage randevu takip sistemi. Takip kodunuz ile randevunuzun durumunu sorgulayabilir, tarih değiştirebilir veya iptal edebilirsiniz."
-        path="/track"
+        path="/randevu-takip"
         keywords="randevu takip, AES Garage randevu sorgulama, randevu iptal, randevu erteleme"
       />
       <div className="max-w-2xl mx-auto">
@@ -333,7 +333,7 @@ function TrackAppointment() {
               <div className="text-center p-4 border border-dark-900">
                 <p className="text-sm text-gray-500 font-light">
                   Bu randevu iptal edilmiştir. Yeni randevu almak için{' '}
-                  <Link to="/appointment" className="text-red-400 hover:text-red-300 transition-colors underline">
+                  <Link to="/randevu" className="text-red-400 hover:text-red-300 transition-colors underline">
                     buraya tıklayın
                   </Link>.
                 </p>
@@ -366,7 +366,7 @@ function TrackAppointment() {
         {/* Bottom link */}
         <div className="text-center mt-12 sm:mt-16">
           <Link
-            to="/appointment"
+            to="/randevu"
             className="text-xs tracking-widest text-gray-600 hover:text-white transition-colors font-light"
           >
             YENİ RANDEVU OLUŞTUR →

@@ -72,11 +72,11 @@ function Navigation({ logo }) {
 
   const menuItems = [
     { path: '/', label: 'Ana Sayfa' },
-    { path: '/about', label: 'Hakkımızda' },
-    { path: '/services', label: 'Hizmetler' },
-    { path: '/pricing', label: 'Fiyatlar' },
-    { path: '/appointment', label: 'Randevu' },
-    { path: '/contact', label: 'İletişim' },
+    { path: '/hakkimizda', label: 'Hakkımızda' },
+    { path: '/hizmetler', label: 'Hizmetler' },
+    { path: '/fiyatlar', label: 'Fiyatlar' },
+    { path: '/randevu', label: 'Randevu' },
+    { path: '/iletisim', label: 'İletişim' },
   ];
 
   return (
@@ -109,7 +109,7 @@ function Navigation({ logo }) {
             </div>
 
             <div className="flex items-center space-x-4">
-              <Link to="/appointment" className="hidden md:block group relative overflow-hidden">
+              <Link to="/randevu" className="hidden md:block group relative overflow-hidden">
                 <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
                 <div className="relative px-8 py-3 border border-red-600 text-white group-hover:text-white transition-colors duration-500 font-light tracking-wider text-sm">
                   RANDEVU AL
@@ -149,7 +149,7 @@ function Navigation({ logo }) {
                 {item.label}
               </Link>
             ))}
-            <Link to="/appointment" className="mt-4 px-12 py-4 border border-red-600 text-white font-light tracking-wider text-sm hover:bg-red-600 transition-colors">
+            <Link to="/randevu" className="mt-4 px-12 py-4 border border-red-600 text-white font-light tracking-wider text-sm hover:bg-red-600 transition-colors">
               RANDEVU AL
             </Link>
           </div>
@@ -200,12 +200,12 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/appointment" element={<Appointment />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/track" element={<TrackAppointment />} />
+            <Route path="/hakkimizda" element={<About />} />
+            <Route path="/hizmetler" element={<Services />} />
+            <Route path="/fiyatlar" element={<Pricing />} />
+            <Route path="/randevu" element={<Appointment />} />
+            <Route path="/iletisim" element={<Contact />} />
+            <Route path="/randevu-takip" element={<TrackAppointment />} />
             <Route path="/kvkk" element={<KVKK />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
@@ -250,11 +250,11 @@ function App() {
               <div>
                 <h3 className="text-[10px] font-light tracking-[0.3em] mb-6 text-gray-600 uppercase">Keşfedin</h3>
                 <ul className="space-y-3">
-                  <li><Link to="/about" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hakkımızda</Link></li>
-                  <li><Link to="/services" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hizmetler</Link></li>
-                  <li><Link to="/pricing" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Fiyatlar</Link></li>
-                  <li><Link to="/appointment" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu</Link></li>
-                  <li><Link to="/track" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu Takip</Link></li>
+                  <li><Link to="/hakkimizda" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hakkımızda</Link></li>
+                  <li><Link to="/hizmetler" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hizmetler</Link></li>
+                  <li><Link to="/fiyatlar" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Fiyatlar</Link></li>
+                  <li><Link to="/randevu" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu</Link></li>
+                  <li><Link to="/randevu-takip" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu Takip</Link></li>
                 </ul>
               </div>
 
@@ -272,7 +272,7 @@ function App() {
               <p className="text-[10px] font-light text-gray-600 tracking-[0.2em]">&copy; 2026 AES GARAGE. TÜM HAKLARI SAKLIDIR.</p>
               <div className="flex space-x-6">
                 <Link to="/kvkk" className="text-[10px] font-light text-gray-600 hover:text-white transition-colors tracking-[0.2em]">KVKK</Link>
-                <Link to="/contact" className="text-[10px] font-light text-gray-600 hover:text-white transition-colors tracking-[0.2em]">İLETİŞİM</Link>
+                <Link to="/iletisim" className="text-[10px] font-light text-gray-600 hover:text-white transition-colors tracking-[0.2em]">İLETİŞİM</Link>
               </div>
             </div>
           </div>

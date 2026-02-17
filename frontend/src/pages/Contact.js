@@ -69,7 +69,7 @@ function Contact() {
       <SEOHead
         title="İletişim"
         description="AES Garage iletişim bilgileri. Adres: Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul. Randevu ve bilgi için bizi arayın. Pazartesi-Cumartesi 09:00-18:00."
-        path="/contact"
+        path="/iletisim"
         keywords="AES Garage iletişim, oto servis Ataşehir, araç servis İstanbul, AES Garage adres, AES Garage telefon"
         schema={{
           '@context': 'https://schema.org',
@@ -80,7 +80,7 @@ function Contact() {
           address: { '@type': 'PostalAddress', streetAddress: 'Küçükbakkalköy Yolu Cd. No:44/B', addressLocality: 'Ataşehir', addressRegion: 'İstanbul', postalCode: '34750', addressCountry: 'TR' },
           openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '09:00', closes: '18:00' }],
           geo: { '@type': 'GeoCoordinates', latitude: 40.9923, longitude: 29.1244 },
-          url: 'https://aesgarage.com/contact'
+          url: 'https://aesgarage.com/iletisim'
         }}
       />
       <div className="max-w-7xl mx-auto">

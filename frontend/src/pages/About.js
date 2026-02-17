@@ -124,7 +124,7 @@ function About() {
       <SEOHead
         title="Hakkımızda"
         description="AES Garage - 15+ yıllık tecrübe ile İstanbul Ataşehir'de profesyonel araç bakım ve servis. Uzman kadro, orijinal yedek parça, müşteriye özel çözümler. Güvenilir oto servis."
-        path="/about"
+        path="/hakkimizda"
         keywords="AES Garage hakkında, oto servis Ataşehir, güvenilir araç servisi, uzman oto tamirci, İstanbul araç bakım"
       />
       {/* Hero */}
@@ -246,7 +246,7 @@ function About() {
           <p className="text-base sm:text-lg md:text-xl font-light text-gray-500 mb-12">
             Aracınız için en iyi bakımı sunmak üzere hazırız
           </p>
-          <Link to="/appointment" className="touch-manipulation inline-block group relative overflow-hidden px-8 sm:px-16 py-5 border border-red-600 btn-glow">
+          <Link to="/randevu" className="touch-manipulation inline-block group relative overflow-hidden px-8 sm:px-16 py-5 border border-red-600 btn-glow">
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             <span className="relative text-xs sm:text-sm tracking-[0.3em] font-light text-white">RANDEVU ALIN</span>
           </Link>

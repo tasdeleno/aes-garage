@@ -436,12 +436,12 @@ function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
-            <Link to="/appointment" className="group relative overflow-hidden px-8 sm:px-12 py-3.5 sm:py-4 border border-red-600 btn-glow w-full sm:w-auto text-center">
+            <Link to="/randevu" className="group relative overflow-hidden px-8 sm:px-12 py-3.5 sm:py-4 border border-red-600 btn-glow w-full sm:w-auto text-center">
               <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               <span className="relative text-sm tracking-[0.2em] font-light text-white">RANDEVU AL</span>
             </Link>
 
-            <Link to="/services" className="group px-8 sm:px-12 py-3.5 sm:py-4 border border-white/20 hover:border-white/50 transition-all duration-500 w-full sm:w-auto text-center">
+            <Link to="/hizmetler" className="group px-8 sm:px-12 py-3.5 sm:py-4 border border-white/20 hover:border-white/50 transition-all duration-500 w-full sm:w-auto text-center">
               <span className="text-sm tracking-[0.2em] font-light text-gray-300 group-hover:text-white transition-colors">HİZMETLER</span>
             </Link>
           </div>
@@ -529,7 +529,7 @@ function Home() {
                     <span className="text-[10px] font-light tracking-wider text-white">İnstagramda Gör</span>
                   </a>
                 )}
-                <Link to="/services" className="absolute inset-0 z-10">
+                <Link to="/hizmetler" className="absolute inset-0 z-10">
                   <LazyImage
                     src={service.image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80'}
                     alt={service.title}
@@ -689,7 +689,7 @@ function Home() {
           <p className="text-base sm:text-lg md:text-xl font-light text-gray-500 mb-8 md:mb-14">
             {ctaContent.subtitle}
           </p>
-          <Link to="/appointment" className="inline-block group relative overflow-hidden px-10 sm:px-16 py-4 sm:py-5 border border-red-600 btn-glow">
+          <Link to="/randevu" className="inline-block group relative overflow-hidden px-10 sm:px-16 py-4 sm:py-5 border border-red-600 btn-glow">
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             <span className="relative text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] font-light text-white">RANDEVU ALIN</span>
           </Link>
