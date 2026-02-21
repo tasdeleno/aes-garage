@@ -603,12 +603,12 @@ function Appointment() {
   };
 
   const nextStep = () => {
-    if (step === 1 && formData.service.length > 0) setStep(2);
-    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) setStep(3);
-    else if (step === 3 && formData.date && formData.time) setStep(4);
+    if (step === 1 && formData.service.length > 0) { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) { setStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else if (step === 3 && formData.date && formData.time) { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   };
 
-  const prevStep = () => setStep(step - 1);
+  const prevStep = () => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const selectedBrand = formData.carBrand && !manualCar ? carDatabase[formData.carBrand] : null;
   const availableModels = selectedBrand ? selectedBrand.models : [];
