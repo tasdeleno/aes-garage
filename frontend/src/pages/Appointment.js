@@ -1266,48 +1266,48 @@ function Appointment() {
               {/* Summary Box */}
               <div className="border border-dark-900 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
                 <div className="border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm block mb-2">Hizmetler ({formData.service.length})</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base block mb-3">Hizmetler ({formData.service.length})</span>
                   <div className="flex flex-wrap gap-2">
                     {formData.service.map((s, i) => (
-                      <span key={i} className="px-2 sm:px-3 py-1 border border-dark-800 text-xs sm:text-sm font-light">{s}</span>
+                      <span key={i} className="px-3 sm:px-4 py-1.5 border border-dark-700 bg-dark-900 text-sm sm:text-base font-medium text-white shadow-sm">{s}</span>
                     ))}
                   </div>
                 </div>
                 <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Araç</span>
-                  <span className="font-light text-sm text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Araç</span>
+                  <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
                 </div>
                 {formData.engineType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Motor</span>
-                    <span className="font-light text-sm text-right ml-4">{formData.engineType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Motor</span>
+                    <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.engineType}</span>
                   </div>
                 )}
                 {formData.packageType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Donanım Paketi</span>
-                    <span className="font-light text-sm text-right ml-4">{formData.packageType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Donanım Paketi</span>
+                    <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.packageType}</span>
                   </div>
                 )}
                 {formData.chiptuningPackage && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Chiptuning Paketi</span>
-                    <span className="font-light text-sm text-right ml-4 text-orange-400">{formData.chiptuningPackage}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Chiptuning Paketi</span>
+                    <span className="font-medium text-base sm:text-lg text-orange-400 text-right ml-4">{formData.chiptuningPackage}</span>
                   </div>
                 )}
                 {formData.oilType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Yağ Tipi</span>
-                    <span className="font-light text-sm text-right ml-4 text-red-400">{formData.oilType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Yağ Tipi</span>
+                    <span className="font-medium text-base sm:text-lg text-red-500 text-right ml-4">{formData.oilType}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Tarih</span>
-                  <span className="font-light text-sm">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Tarih</span>
+                  <span className="font-medium text-base sm:text-lg text-white">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Saat</span>
-                  <span className="font-light text-sm">{formData.time}</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Saat</span>
+                  <span className="font-medium text-base sm:text-lg text-white">{formData.time}</span>
                 </div>
               </div>
 
