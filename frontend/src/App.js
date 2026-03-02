@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Pricing from './pages/Pricing';
 import Appointment from './pages/Appointment';
+import Chiptuning from './pages/Chiptuning';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import About from './pages/About';
@@ -74,6 +75,7 @@ function Navigation({ logo }) {
     { path: '/', label: 'Ana Sayfa' },
     { path: '/hakkimizda', label: 'Hakkımızda' },
     { path: '/hizmetler', label: 'Hizmetler' },
+    { path: '/chiptuning', label: 'Chiptuning' },
     { path: '/fiyatlar', label: 'Fiyatlar' },
     { path: '/randevu', label: 'Randevu' },
     { path: '/iletisim', label: 'İletişim' },
@@ -202,6 +204,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/hakkimizda" element={<About />} />
             <Route path="/hizmetler" element={<Services />} />
+            <Route path="/chiptuning" element={<Chiptuning />} />
             <Route path="/fiyatlar" element={<Pricing />} />
             <Route path="/randevu" element={<Appointment />} />
             <Route path="/iletisim" element={<Contact />} />
@@ -252,6 +255,7 @@ function App() {
                 <ul className="space-y-3">
                   <li><Link to="/hakkimizda" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hakkımızda</Link></li>
                   <li><Link to="/hizmetler" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Hizmetler</Link></li>
+                  <li><Link to="/chiptuning" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Chiptuning</Link></li>
                   <li><Link to="/fiyatlar" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Fiyatlar</Link></li>
                   <li><Link to="/randevu" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu</Link></li>
                   <li><Link to="/randevu-takip" className="text-sm font-light text-gray-500 hover:text-white transition-colors duration-300 hover:pl-2">Randevu Takip</Link></li>
