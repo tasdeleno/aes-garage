@@ -75,18 +75,15 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
   const bgEnd = degToPoint(0, r);
   const bgArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 1 0 ${bgEnd.x} ${bgEnd.y}`;
 
-  // Mevcut HP yayı (kırmızı)
+  // Kırmızı Yay (Mevcut HP) - sadece mevcut HP'ye kadar ulaşıyor
   const curAngle = hpToAngle(currentHP);
   const curEnd = degToPoint(curAngle, r);
-  // Burada 0 0 yerine sweep flag'ine dikkat ederek çiziyoruz
   const curArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 0 1 ${curEnd.x} ${curEnd.y}`;
 
-  // Chiptuning kazanç yayı (turuncu)
-  const gainStart = degToPoint(curAngle, r);
+  // Turuncu Yay (Yeni HP) - En alttan başlayıp yeni HP'ye kadar gidiyor (daha uzun, kırmızı üstüne binecek)
   const gainAngle = hpToAngle(newHP);
   const gainEnd = degToPoint(gainAngle, r);
-  // Turuncu yayı mevcut HP'nin bittiği yerden başlayıp yeni HP'ye çizecek.
-  const gainArc = `M ${gainStart.x} ${gainStart.y} A ${r} ${r} 0 0 1 ${gainEnd.x} ${gainEnd.y}`;
+  const gainArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 0 1 ${gainEnd.x} ${gainEnd.y}`;
 
   const gain = newHP - currentHP;
 
@@ -138,12 +135,12 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
         stroke="#f97316"
         strokeWidth="22"
         strokeLinecap="round"
-        opacity="0.9"
+        opacity="1"
         style={{ transition: 'all 1.5s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
       />
 
       {/* Mevcut HP yayı (kırmızı) - Üstte kalması ve ucunun yuvarlak olması için turuncunun altına ekledik */}
-      <path d={curArc} fill="none" stroke="#dc2626" strokeWidth="22" strokeLinecap="round" opacity="0.95" />
+      <path d={curArc} fill="none" stroke="#dc2626" strokeWidth="22" strokeLinecap="round" opacity="1" />
 
       {/* İbre */}
       <g
