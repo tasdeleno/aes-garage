@@ -5,77 +5,48 @@ import carImage from '../assets/car-topdown.png';
 export default function LoadingScreen({ onComplete }) {
     const [isVisible, setIsVisible] = useState(true);
     const [isFadingOut, setIsFadingOut] = useState(false);
-    const containerRef = useRef(null);
-    const carRef = useRef(null);
-
-    // Physics state
-    const mouse = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    const carPos = useRef({ x: window.innerWidth / 2, y: window.innerHeight + 200, angle: -Math.PI / 2 });
-    const rafId = useRef(null);
+    const [particles, setParticles] = useState([]);
 
     useEffect(() => {
-        // Handle mouse move
-        const handleMouseMove = (e) => {
-            mouse.current = { x: e.clientX, y: e.clientY };
-        };
+        // Spawn smoke particles continuously for the burnout effect
+        const spawnInterval = setInterval(() => {
+            setParticles(prev => {
+                // Keep enough particles for dense dual smoke
+                const current = prev.length > 60 ? prev.slice(prev.length - 60) : prev;
 
-        // For touch devices
-        const handleTouchMove = (e) => {
-            if (e.touches.length > 0) {
-                mouse.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-        };
+                // Base distance backward and laterally
+                const backwardForce = Math.random() * 100 + 50;  // Shoots backward (left)
+                const lateralForce = Math.random() * 80 + 30;   // Shoots outward (up/down)
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('touchmove', handleTouchMove);
+                // Tire 1: Top-Left (Rear Left) - shoots Left and UP
+                const p1 = {
+                    id: Date.now() + Math.random(),
+                    x: `calc(50% - 100px)`,    // Rear of car (100px left of center)
+                    y: `calc(50% - 160px)`,    // Top tire (relative to car center at Y-120px)
+                    tx: `${-backwardForce}px`, // Go Left
+                    ty: `${-lateralForce}px`,  // Go Up
+                    size: 40 + Math.random() * 40,
+                };
 
-        // Animation Loop
-        const update = () => {
-            if (!carRef.current) return;
+                // Tire 2: Bottom-Left (Rear Right) - shoots Left and DOWN
+                const p2 = {
+                    id: Date.now() + Math.random() * 2,
+                    x: `calc(50% - 100px)`,    // Rear of car
+                    y: `calc(50% - 80px)`,     // Bottom tire
+                    tx: `${-backwardForce}px`, // Go Left
+                    ty: `${lateralForce}px`,   // Go Down
+                    size: 40 + Math.random() * 40,
+                };
+                return [...current, p1, p2];
+            });
+        }, 50); // Spawn every 50ms (dense smoke)
 
-            const speed = 0.05; // Lerp factor for position
-            const dx = mouse.current.x - carPos.current.x;
-            const dy = mouse.current.y - carPos.current.y;
-
-            // Update position
-            carPos.current.x += dx * speed;
-            carPos.current.y += dy * speed;
-
-            // Calculate target angle
-            let targetAngle = Math.atan2(dy, dx);
-
-            // Normalize angle difference to avoid spinning 360 degrees when crossing Math.PI
-            let angleDiff = targetAngle - carPos.current.angle;
-            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-
-            // Smooth rotation (drift effect - slow rotation interpolation)
-            carPos.current.angle += angleDiff * 0.08;
-
-            // Apply transform
-            // Note: Math.atan2 returns angle in radians, 0 is right. 
-            // Our top-down car image might be facing UP or RIGHT by default.
-            // If the image faces RIGHT, we don't need to add offset. If it faces UP, we add Math.PI/2 (90deg).
-            // Assuming it faces right initially (or we can tweak this offset later):
-            const rotationDeg = (carPos.current.angle * 180) / Math.PI;
-
-            // Center the image based on its width/height (approx 100px)
-            carRef.current.style.transform = `translate(${carPos.current.x}px, ${carPos.current.y}px) translate(-50%, -50%) rotate(${rotationDeg + 90}deg)`;
-
-            rafId.current = requestAnimationFrame(update);
-        };
-
-        rafId.current = requestAnimationFrame(update);
-
-        // Auto complete after 3.5 seconds to ensure user isn't stuck if they don't click
         const timer = setTimeout(() => {
             completeLoading();
         }, 3500);
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('touchmove', handleTouchMove);
-            cancelAnimationFrame(rafId.current);
+            clearInterval(spawnInterval);
             clearTimeout(timer);
         };
     }, []);
@@ -86,43 +57,56 @@ export default function LoadingScreen({ onComplete }) {
         setTimeout(() => {
             setIsVisible(false);
             if (onComplete) onComplete();
-        }, 800); // 800ms fade out duration
+        }, 800);
     };
 
     if (!isVisible) return null;
 
     return (
         <div
-            ref={containerRef}
-            className={`fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-red-900 to-[#0a0000] overflow-hidden cursor-crosshair transition-opacity duration-800 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}
+            className={`fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-red-900 to-[#0a0000] overflow-hidden transition-opacity duration-800 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}
             onClick={completeLoading}
         >
             {/* Background radial glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.15)_0%,transparent_70%)]"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.15)_0%,transparent_70%)] z-0"></div>
 
             {/* Loading Text */}
-            <div className="relative z-10 pointer-events-none select-none flex flex-col items-center">
-                <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-[0.2em] md:tracking-[0.4em] text-white/90 drop-shadow-2xl">
+            <div className="absolute top-[calc(50%+40px)] left-1/2 -translate-x-1/2 z-10 pointer-events-none select-none flex flex-col items-center">
+                <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-[0.2em] md:tracking-[0.4em] text-white/90 drop-shadow-[0_0_30px_rgba(255,0,0,0.5)]">
                     YÜKLENİYOR
                 </h1>
-                <div className="mt-4 flex space-x-2">
+                <div className="mt-4 flex space-x-3">
                     <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                     <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
             </div>
 
-            {/* Car Figure */}
+            {/* Smoke Particles */}
+            {particles.map(p => (
+                <div
+                    key={p.id}
+                    className="smoke-particle"
+                    style={{
+                        left: p.x,
+                        top: p.y,
+                        width: p.size,
+                        height: p.size,
+                        '--tx': p.tx,
+                        '--ty': p.ty
+                    }}
+                />
+            ))}
+
+            {/* Centered Car Figure for Burnout - POSITIONED ABOVE TEXT */}
             <img
-                ref={carRef}
                 src={carImage}
-                alt="BMW E36 Drift"
-                className="absolute top-0 left-0 w-32 h-32 md:w-48 md:h-48 object-contain pointer-events-none loading-car-image"
-                style={{ transformOrigin: 'center center' }}
+                alt="BMW E36 Burnout"
+                className="absolute top-[calc(50%-120px)] left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 md:w-80 md:h-80 object-contain pointer-events-none loading-car-image"
             />
 
             {/* Click to skip hint */}
-            <div className="absolute bottom-8 text-white/40 text-xs sm:text-sm font-light tracking-widest pointer-events-none animate-pulse">
+            <div className="absolute bottom-8 text-white/40 text-xs sm:text-sm font-light tracking-widest pointer-events-none animate-pulse z-30">
                 Geçmek için tıklayın
             </div>
         </div>

@@ -1,6 +1,51 @@
 .loading-car-image {
-  /* Using blend mode to remove white background against red */
-  mix-blend-mode: multiply;
-  /* Optional: slight contrast boost to offset the darkening effect of multiply */
-  filter: contrast(1.2) brightness(1.1) drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+  /* No mix-blend-mode here as background is removed directly in png */
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
+  animation: car-vibrate 0.1s linear infinite;
+  z-index: 20;
+}
+
+@keyframes car-vibrate {
+  0% {
+    transform: translate(-50%, -50%) rotate(90deg) translate(2px, 2px);
+  }
+
+  25% {
+    transform: translate(-50%, -50%) rotate(90.5deg) translate(-2px, -2px);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) rotate(89.5deg) translate(-2px, 2px);
+  }
+
+  75% {
+    transform: translate(-50%, -50%) rotate(90deg) translate(2px, -2px);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(90deg) translate(2px, 2px);
+  }
+}
+
+.smoke-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 200, 200, 0.8) 0%, rgba(100, 100, 100, 0) 70%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: 15;
+  /* Behind car, above text */
+  animation: smoke-rise 2s ease-out forwards;
+}
+
+@keyframes smoke-rise {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(3);
+    opacity: 0;
+  }
 }
