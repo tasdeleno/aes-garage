@@ -70,7 +70,7 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
     return () => clearTimeout(timer);
   }, [animate, newHP, minHP, maxHP]);
 
-  // Arka plan yayı (yarı çember)
+  // Arka plan yayı (gri yarı çember)
   const bgStart = degToPoint(180, r);
   const bgEnd = degToPoint(0, r);
   const bgArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 1 0 ${bgEnd.x} ${bgEnd.y}`;
@@ -79,14 +79,15 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
   const curAngle = hpToAngle(currentHP);
   const curEnd = degToPoint(curAngle, r);
   const curArcLarge = (180 - curAngle) > 180 ? 1 : 0;
-  const curArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 ${curArcLarge} 0 ${curEnd.x} ${curEnd.y}`;
+  // Burada 0 0 yerine sweep flag'ine dikkat ederek çiziyoruz
+  const curArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 0 1 ${curEnd.x} ${curEnd.y}`;
 
   // Chiptuning kazanç yayı (turuncu)
   const gainStart = degToPoint(curAngle, r);
   const gainAngle = hpToAngle(newHP);
   const gainEnd = degToPoint(gainAngle, r);
-  const gainArcLarge = (curAngle - gainAngle) > 180 ? 1 : 0;
-  const gainArc = `M ${gainStart.x} ${gainStart.y} A ${r} ${r} 0 ${gainArcLarge} 0 ${gainEnd.x} ${gainEnd.y}`;
+  // Turuncu yayı mevcut HP'nin bittiği yerden başlayıp yeni HP'ye çizecek.
+  const gainArc = `M ${gainStart.x} ${gainStart.y} A ${r} ${r} 0 0 1 ${gainEnd.x} ${gainEnd.y}`;
 
   const gain = newHP - currentHP;
 
@@ -131,9 +132,6 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
         </g>
       ))}
 
-      {/* Mevcut HP yayı (kırmızı) */}
-      <path d={curArc} fill="none" stroke="#dc2626" strokeWidth="22" strokeLinecap="round" opacity="0.9" />
-
       {/* Chiptuning kazanç yayı (turuncu) - animate */}
       <path
         d={gainArc}
@@ -141,9 +139,12 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
         stroke="#f97316"
         strokeWidth="22"
         strokeLinecap="round"
-        opacity="0.85"
+        opacity="0.9"
         style={{ transition: 'all 1.5s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
       />
+
+      {/* Mevcut HP yayı (kırmızı) - Üstte kalması ve ucunun yuvarlak olması için turuncunun altına ekledik */}
+      <path d={curArc} fill="none" stroke="#dc2626" strokeWidth="22" strokeLinecap="round" opacity="0.95" />
 
       {/* İbre */}
       <g
@@ -162,10 +163,10 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
       </g>
 
       {/* HP değerleri */}
-      <text x={cx} y={cy + 40} textAnchor="middle" fill="white" fontSize="20" fontWeight="300" letterSpacing="1">
+      <text x={cx} y={cy + 30} textAnchor="middle" fill="white" fontSize="24" fontWeight="300" letterSpacing="1">
         {newHP} HP
       </text>
-      <text x={cx} y={cy + 58} textAnchor="middle" fill="#f97316" fontSize="13" fontWeight="300">
+      <text x={cx} y={cy + 52} textAnchor="middle" fill="#f97316" fontSize="14" fontWeight="300">
         +{gain} HP
       </text>
     </svg>
