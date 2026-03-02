@@ -680,13 +680,25 @@ function Appointment() {
     }
   };
 
-  const nextStep = () => {
-    if (step === 1 && formData.service.length > 0) { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) { setStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else if (step === 3 && formData.date && formData.time) { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  const scrollToForm = () => {
+    setTimeout(() => {
+      const el = document.getElementById('form-top');
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
-  const prevStep = () => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const nextStep = () => {
+    if (step === 1 && formData.service.length > 0) { setStep(2); scrollToForm(); }
+    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) { setStep(3); scrollToForm(); }
+    else if (step === 3 && formData.date && formData.time) { setStep(4); scrollToForm(); }
+  };
+
+  const prevStep = () => { setStep(step - 1); scrollToForm(); };
 
   const selectedBrand = formData.carBrand && !manualCar ? combinedDb[formData.carBrand] : null;
   const availableModels = selectedBrand ? selectedBrand.models : [];
@@ -695,9 +707,11 @@ function Appointment() {
     : [];
   const availablePackages = selectedBrand ? selectedBrand.packages : [];
 
-  // Eğer admin'den chiptuning listesi geldiyse onu kullan.
+  // Eğer admin'den chiptuning listesi geldiyse onu kullan, yoksa varsayılanları (Stage 1, 2, 3).
   const isChiptuningSelected = formData.service.includes('Chiptuning');
-  const availableChiptuningPackages = chiptuningPackages.map(p => p.name);
+  const availableChiptuningPackages = chiptuningPackages.length > 0
+    ? chiptuningPackages.map(p => p.name)
+    : ['Stage 1', 'Stage 2', 'Stage 3'];
 
   if (success) {
     return (
@@ -860,7 +874,7 @@ function Appointment() {
         )}
 
         {/* Progress */}
-        <div className="mb-8 sm:mb-12">
+        <div id="form-top" className="mb-8 sm:mb-12">
           <div className="flex items-center">
             {[
               { num: 1, label: 'HİZMET' },
