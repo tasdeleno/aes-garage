@@ -1,0 +1,6 @@
+.loading-car-image {
+  /* Using blend mode to remove white background against red */
+  mix-blend-mode: multiply;
+  /* Optional: slight contrast boost to offset the darkening effect of multiply */
+  filter: contrast(1.2) brightness(1.1) drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+}

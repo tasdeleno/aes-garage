@@ -12,6 +12,7 @@ import About from './pages/About';
 import KVKK from './pages/KVKK';
 import TrackAppointment from './pages/TrackAppointment';
 import NotFound from './pages/NotFound';
+import LoadingScreen from './components/LoadingScreen';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -163,6 +164,7 @@ function Navigation({ logo }) {
 
 function App() {
   const [logo, setLogo] = useState('');
+  const [initialLoad, setInitialLoad] = useState(() => !sessionStorage.getItem('hasLoaded'));
   const [contactInfo, setContactInfo] = useState({
     phone: '+90 555 123 45 67',
     email: 'info@aesgarage.com',
@@ -193,8 +195,14 @@ function App() {
     fetchSettings();
   }, []);
 
+  const handleLoadingComplete = () => {
+    sessionStorage.setItem('hasLoaded', 'true');
+    setInitialLoad(false);
+  };
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      {initialLoad && <LoadingScreen onComplete={handleLoadingComplete} />}
       <div className="min-h-screen bg-black text-white">
         <ScrollToTop />
         <Navigation logo={logo} />
