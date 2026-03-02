@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import carDatabase from '../data/carDatabase';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -114,8 +115,13 @@ function Admin() {
       '15W-40 Mineral',
       '5W-30 Yarı Sentetik',
     ],
+    vehicleHP: [],
   });
   const [newOilType, setNewOilType] = useState('');
+
+  // Araç Beygir Veritabanı — yeni kayıt formu state'i
+  const [useManualVehicle, setUseManualVehicle] = useState(false);
+  const [newVehicle, setNewVehicle] = useState({ brand: '', model: '', year: '', engine: '', baseHP: '', stageHP: {} });
 
   // ─── Dinamik Servis Listesi ───
   const [servicesList, setServicesList] = useState(defaultServices);
@@ -254,6 +260,7 @@ function Admin() {
           setChiptuningData(prev => ({
             packages: Array.isArray(parsed.packages) && parsed.packages.length > 0 ? parsed.packages : prev.packages,
             oilTypes: Array.isArray(parsed.oilTypes) && parsed.oilTypes.length > 0 ? parsed.oilTypes : prev.oilTypes,
+            vehicleHP: Array.isArray(parsed.vehicleHP) ? parsed.vehicleHP : prev.vehicleHP ?? [],
           }));
         }
       } catch(e) {}
@@ -947,6 +954,205 @@ function Admin() {
                   className={btnOutline + ' w-full py-3'}
                 >
                   + YENİ PAKET EKLE
+                </button>
+              </div>
+            </div>
+
+            {/* ── Araç Beygir Veritabanı ── */}
+            <div className="border border-dark-800 p-6 space-y-6">
+              <SectionTitle title="Araç Beygir Veritabanı" description="Marka/model/motor için kesin beygir değerleri girin. Chiptuning sayfasında bu değerler otomatik regex yerine kullanılır." />
+
+              {/* Mevcut kayıtlar */}
+              {chiptuningData.vehicleHP.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs font-light border-collapse">
+                    <thead>
+                      <tr className="border-b border-dark-700">
+                        <th className="text-left text-gray-500 tracking-widest py-2 pr-3">MARKA</th>
+                        <th className="text-left text-gray-500 tracking-widest py-2 pr-3">MODEL</th>
+                        <th className="text-left text-gray-500 tracking-widest py-2 pr-3">YIL</th>
+                        <th className="text-left text-gray-500 tracking-widest py-2 pr-3">MOTOR</th>
+                        <th className="text-center text-gray-500 tracking-widest py-2 pr-3">BAZ HP</th>
+                        {chiptuningData.packages.map(pkg => (
+                          <th key={pkg.name} className="text-center text-gray-500 tracking-widest py-2 pr-3 whitespace-nowrap">{pkg.name} HP</th>
+                        ))}
+                        <th className="py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chiptuningData.vehicleHP.map((v, i) => (
+                        <tr key={i} className="border-b border-dark-900 hover:bg-dark-900/30 transition-colors">
+                          <td className="py-2 pr-3 text-white">{v.brand}</td>
+                          <td className="py-2 pr-3 text-gray-300">{v.model}</td>
+                          <td className="py-2 pr-3 text-gray-500">{v.year || '—'}</td>
+                          <td className="py-2 pr-3 text-gray-300 max-w-[180px] truncate">{v.engine}</td>
+                          <td className="py-2 pr-3 text-center text-red-400 font-light">{v.baseHP}</td>
+                          {chiptuningData.packages.map(pkg => (
+                            <td key={pkg.name} className="py-2 pr-3 text-center text-orange-400">
+                              {v.stageHP?.[pkg.name] || <span className="text-gray-700">auto</span>}
+                            </td>
+                          ))}
+                          <td className="py-2 pl-2">
+                            <button
+                              onClick={() => setChiptuningData(prev => ({
+                                ...prev,
+                                vehicleHP: prev.vehicleHP.filter((_, idx) => idx !== i)
+                              }))}
+                              className={btnDanger}
+                            >
+                              Sil
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {chiptuningData.vehicleHP.length === 0 && (
+                <p className="text-xs text-gray-700 font-light italic">Henüz araç eklenmemiş.</p>
+              )}
+
+              {/* Yeni Kayıt Formu */}
+              <div className="border border-dark-700 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs tracking-widest text-gray-400 font-light">YENİ ARAÇ EKLE</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-xs text-gray-600 font-light">Manuel Giriş</span>
+                    <div
+                      onClick={() => {
+                        setUseManualVehicle(v => !v);
+                        setNewVehicle({ brand: '', model: '', year: '', engine: '', baseHP: '', stageHP: {} });
+                      }}
+                      className={`w-10 h-5 rounded-full transition-colors cursor-pointer flex items-center px-0.5 ${useManualVehicle ? 'bg-red-600' : 'bg-dark-700'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${useManualVehicle ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </div>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Marka */}
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-1">MARKA</label>
+                    {!useManualVehicle ? (
+                      <select
+                        className={inputClass}
+                        value={newVehicle.brand}
+                        onChange={e => setNewVehicle(v => ({ ...v, brand: e.target.value, model: '', engine: '' }))}
+                      >
+                        <option value="">Marka seçin</option>
+                        {Object.keys(carDatabase).sort().map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className={inputClass} value={newVehicle.brand} onChange={e => setNewVehicle(v => ({ ...v, brand: e.target.value }))} placeholder="BMW" />
+                    )}
+                  </div>
+
+                  {/* Model */}
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-1">MODEL</label>
+                    {!useManualVehicle && newVehicle.brand && carDatabase[newVehicle.brand] ? (
+                      <select
+                        className={inputClass}
+                        value={newVehicle.model}
+                        onChange={e => setNewVehicle(v => ({ ...v, model: e.target.value, engine: '' }))}
+                      >
+                        <option value="">Model seçin</option>
+                        {carDatabase[newVehicle.brand].models.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className={inputClass} value={newVehicle.model} onChange={e => setNewVehicle(v => ({ ...v, model: e.target.value }))} placeholder="3 Serisi" />
+                    )}
+                  </div>
+
+                  {/* Motor */}
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-1">MOTOR</label>
+                    {!useManualVehicle && newVehicle.brand && newVehicle.model && carDatabase[newVehicle.brand]?.engines?.[newVehicle.model] ? (
+                      <select
+                        className={inputClass}
+                        value={newVehicle.engine}
+                        onChange={e => setNewVehicle(v => ({ ...v, engine: e.target.value }))}
+                      >
+                        <option value="">Motor seçin</option>
+                        {carDatabase[newVehicle.brand].engines[newVehicle.model].map(eng => (
+                          <option key={eng} value={eng}>{eng}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className={inputClass} value={newVehicle.engine} onChange={e => setNewVehicle(v => ({ ...v, engine: e.target.value }))} placeholder="320d 190 HP" />
+                    )}
+                  </div>
+
+                  {/* Yıl */}
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-1">YIL (OPSİYONEL)</label>
+                    <input className={inputClass} value={newVehicle.year} onChange={e => setNewVehicle(v => ({ ...v, year: e.target.value }))} placeholder="2021" />
+                  </div>
+
+                  {/* Baz HP */}
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-1">MEVCUT (BAZ) HP</label>
+                    <input className={inputClass} type="number" value={newVehicle.baseHP} onChange={e => setNewVehicle(v => ({ ...v, baseHP: e.target.value }))} placeholder="190" />
+                  </div>
+                </div>
+
+                {/* Her stage için HP */}
+                {chiptuningData.packages.length > 0 && (
+                  <div>
+                    <label className="block text-xs tracking-widest text-gray-600 mb-2">STAGE BAŞINA HEDEF HP (boş bırakırsanız yüzde hesaplaması kullanılır)</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {chiptuningData.packages.map(pkg => (
+                        <div key={pkg.name}>
+                          <label className="block text-xs text-gray-600 mb-1">{pkg.name}</label>
+                          <input
+                            className={inputClass}
+                            type="number"
+                            value={newVehicle.stageHP[pkg.name] || ''}
+                            onChange={e => setNewVehicle(v => ({
+                              ...v,
+                              stageHP: { ...v.stageHP, [pkg.name]: e.target.value }
+                            }))}
+                            placeholder={`Örn: ${newVehicle.baseHP ? Math.round(Number(newVehicle.baseHP) * (1 + pkg.gainPercent / 100)) : '—'}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    if (!newVehicle.brand || !newVehicle.engine || !newVehicle.baseHP) return;
+                    const cleanStageHP = {};
+                    Object.entries(newVehicle.stageHP).forEach(([k, v]) => {
+                      if (v) cleanStageHP[k] = Number(v);
+                    });
+                    const entry = {
+                      brand: newVehicle.brand,
+                      model: newVehicle.model,
+                      year: newVehicle.year,
+                      engine: newVehicle.engine,
+                      baseHP: Number(newVehicle.baseHP),
+                      stageHP: cleanStageHP,
+                    };
+                    setChiptuningData(prev => ({ ...prev, vehicleHP: [...(prev.vehicleHP || []), entry] }));
+                    setNewVehicle({ brand: '', model: '', year: '', engine: '', baseHP: '', stageHP: {} });
+                    setUseManualVehicle(false);
+                  }}
+                  disabled={!newVehicle.brand || !newVehicle.engine || !newVehicle.baseHP}
+                  className={`w-full py-3 border font-light tracking-wider text-xs transition-all ${
+                    newVehicle.brand && newVehicle.engine && newVehicle.baseHP
+                      ? 'border-red-600 text-red-400 hover:bg-red-600/10'
+                      : 'border-dark-900 text-gray-700 cursor-not-allowed'
+                  }`}
+                >
+                  + ARAÇ EKLE
                 </button>
               </div>
             </div>

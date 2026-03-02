@@ -180,6 +180,7 @@ const defaultChipPackages = [
 
 function Chiptuning() {
   const [chipPackages, setChipPackages] = useState(defaultChipPackages);
+  const [vehicleHPList, setVehicleHPList] = useState([]);
 
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -190,7 +191,7 @@ function Chiptuning() {
   const [showResult, setShowResult] = useState(false);
   const [animating, setAnimating] = useState(false);
 
-  // Chiptuning paketlerini admin settings'ten çek
+  // Chiptuning paketleri ve araç HP veritabanını admin settings'ten çek
   useEffect(() => {
     const fetchChipData = async () => {
       try {
@@ -203,6 +204,9 @@ function Chiptuning() {
           const parsed = JSON.parse(general.chiptuningData);
           if (Array.isArray(parsed.packages) && parsed.packages.length > 0) {
             setChipPackages(parsed.packages);
+          }
+          if (Array.isArray(parsed.vehicleHP)) {
+            setVehicleHPList(parsed.vehicleHP);
           }
         }
       } catch (e) {
@@ -255,9 +259,19 @@ function Chiptuning() {
     ? allEngines.filter(e => detectFuelType(e) === fuel)
     : allEngines;
 
-  const currentHP = engine ? extractHP(engine) : null;
+  // Admin'den girilen araç HP override'ını bul
+  const vehicleOverride = engine && brand
+    ? vehicleHPList.find(v => v.brand === brand && v.model === model && v.engine === engine)
+    : null;
+
+  const currentHP = vehicleOverride
+    ? Number(vehicleOverride.baseHP)
+    : (engine ? extractHP(engine) : null);
+
   const newHP = currentHP && selectedPackage
-    ? Math.round(currentHP * (1 + (selectedPackage.gainPercent || 0) / 100))
+    ? (vehicleOverride?.stageHP?.[selectedPackage.name]
+        ? Number(vehicleOverride.stageHP[selectedPackage.name])
+        : Math.round(currentHP * (1 + (selectedPackage.gainPercent || 0) / 100)))
     : null;
 
   const handleHesapla = () => {
