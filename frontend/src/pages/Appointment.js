@@ -286,7 +286,8 @@ function Appointment() {
     carModel: initialModel || '',
     carYear: '',
     engineType: initialEngine || '',
-    packageType: initialChipPackage || '', // Chiptuning için paket
+    packageType: '', // Donanım paketi
+    chiptuningPackage: initialChipPackage || '', // Chiptuning için paket
     date: '',
     time: '',
     message: '',
@@ -631,10 +632,16 @@ function Appointment() {
 
     try {
       const serviceText = Array.isArray(formData.service) ? formData.service.join(', ') : formData.service;
+      let finalMessage = `${formData.carBrand} ${formData.carModel} (${formData.carYear})`;
+      if (formData.engineType) finalMessage += ` - Motor: ${formData.engineType}`;
+      if (formData.packageType) finalMessage += ` - Donanım: ${formData.packageType}`;
+      if (formData.chiptuningPackage) finalMessage += ` - Chip: ${formData.chiptuningPackage}`;
+      if (formData.message) finalMessage += ` | Not: ${formData.message}`;
+
       const result = await axios.post(`${API}/api/appointments`, {
         ...formData,
         service: serviceText,
-        message: `${formData.carBrand} ${formData.carModel} (${formData.carYear}) - ${formData.engineType} - ${formData.packageType} ${formData.message ? '- ' + formData.message : ''}`,
+        message: finalMessage,
         oilType: formData.oilType || ''
       });
       setSuccess(true);
@@ -686,11 +693,11 @@ function Appointment() {
   const availableEngines = selectedBrand && formData.carModel && selectedBrand.engines[formData.carModel]
     ? selectedBrand.engines[formData.carModel]
     : [];
+  const availablePackages = selectedBrand ? selectedBrand.packages : [];
+
   // Eğer admin'den chiptuning listesi geldiyse onu kullan.
   const isChiptuningSelected = formData.service.includes('Chiptuning');
-  const availablePackages = isChiptuningSelected && chiptuningPackages.length > 0
-    ? chiptuningPackages.map(p => p.name)
-    : (selectedBrand ? selectedBrand.packages : []);
+  const availableChiptuningPackages = chiptuningPackages.map(p => p.name);
 
   if (success) {
     return (
@@ -1087,21 +1094,37 @@ function Appointment() {
                     </div>
                   )}
 
-                  {/* Package Dropdown */}
+                  {/* Trim Package Dropdown */}
                   {formData.carYear && availablePackages.length > 0 && (
                     <div>
-                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">
-                        {isChiptuningSelected ? 'CHİPTUNİNG PAKETİ' : 'DONANIM PAKETİ'}
-                      </label>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">DONANIM PAKETİ</label>
                       <select
                         name="packageType"
                         value={formData.packageType}
                         onChange={handleChange}
                         className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
-                        required={isChiptuningSelected} /* Chiptuning ise zorunlu */
                       >
-                        <option value="">Seçiniz {isChiptuningSelected ? '' : '(Opsiyonel)'}</option>
+                        <option value="">Seçiniz (Opsiyonel)</option>
                         {availablePackages.map(pkg => (
+                          <option key={pkg} value={pkg}>{pkg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Chiptuning Package Dropdown */}
+                  {formData.carYear && isChiptuningSelected && availableChiptuningPackages.length > 0 && (
+                    <div>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">CHİPTUNİNG PAKETİ</label>
+                      <select
+                        name="chiptuningPackage"
+                        value={formData.chiptuningPackage}
+                        onChange={handleChange}
+                        className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
+                        required
+                      >
+                        <option value="">Seçiniz</option>
+                        {availableChiptuningPackages.map(pkg => (
                           <option key={pkg} value={pkg}>{pkg}</option>
                         ))}
                       </select>
@@ -1167,18 +1190,37 @@ function Appointment() {
                     />
                   </div>
 
-                  {/* Manual Package Input */}
+                  {/* Manual Trim Package Input */}
                   <div>
-                    <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">PAKET (Opsiyonel)</label>
+                    <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">DONANIM PAKETİ (Opsiyonel)</label>
                     <input
                       type="text"
                       name="packageType"
                       value={formData.packageType}
                       onChange={handleChange}
-                      placeholder="Örn: Full Self-Driving"
+                      placeholder="Örn: M Sport"
                       className="w-full bg-transparent border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
                     />
                   </div>
+
+                  {/* Manual Chiptuning Package Selection */}
+                  {isChiptuningSelected && (
+                    <div>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">CHİPTUNİNG PAKETİ</label>
+                      <select
+                        name="chiptuningPackage"
+                        value={formData.chiptuningPackage}
+                        onChange={handleChange}
+                        className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
+                        required
+                      >
+                        <option value="">Seçiniz</option>
+                        {availableChiptuningPackages.map(pkg => (
+                          <option key={pkg} value={pkg}>{pkg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1243,8 +1285,14 @@ function Appointment() {
                 )}
                 {formData.packageType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Paket</span>
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Donanım Paketi</span>
                     <span className="font-light text-sm text-right ml-4">{formData.packageType}</span>
+                  </div>
+                )}
+                {formData.chiptuningPackage && (
+                  <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Chiptuning Paketi</span>
+                    <span className="font-light text-sm text-right ml-4 text-orange-400">{formData.chiptuningPackage}</span>
                   </div>
                 )}
                 {formData.oilType && (
