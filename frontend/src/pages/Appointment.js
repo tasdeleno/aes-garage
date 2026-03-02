@@ -282,7 +282,8 @@ function Appointment() {
     packageType: '',
     date: '',
     time: '',
-    message: ''
+    message: '',
+    oilType: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -296,7 +297,17 @@ function Appointment() {
   // servicePrices: servis adı → { min, max, note } map'i (servicesList'ten türetilir)
   const [servicePrices, setServicePrices] = useState({});
 
-  // Backend'den servis listesini çek
+  // Yağ tipleri listesi (chiptuningData settings'ten çekilir)
+  const [oilTypes, setOilTypes] = useState([
+    '5W-30 Full Sentetik',
+    '5W-40 Full Sentetik',
+    '0W-20 Full Sentetik',
+    '10W-40 Yarı Sentetik',
+    '15W-40 Mineral',
+    '5W-30 Yarı Sentetik',
+  ]);
+
+  // Backend'den servis listesini ve yağ tiplerini çek
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -305,6 +316,18 @@ function Appointment() {
         response.data.forEach(s => {
           if (s.category === 'general') general[s.key] = s.value;
         });
+
+        // Yağ tiplerini chiptuningData'dan çek
+        try {
+          if (general.chiptuningData) {
+            const chipData = JSON.parse(general.chiptuningData);
+            if (Array.isArray(chipData.oilTypes) && chipData.oilTypes.length > 0) {
+              setOilTypes(chipData.oilTypes);
+            }
+          }
+        } catch(e) {
+          console.error('chiptuningData parse error:', e);
+        }
 
         try {
           if (general.servicesList) {
@@ -564,7 +587,8 @@ function Appointment() {
       const result = await axios.post(`${API}/api/appointments`, {
         ...formData,
         service: serviceText,
-        message: `${formData.carBrand} ${formData.carModel} (${formData.carYear}) - ${formData.engineType} - ${formData.packageType} ${formData.message ? '- ' + formData.message : ''}`
+        message: `${formData.carBrand} ${formData.carModel} (${formData.carYear}) - ${formData.engineType} - ${formData.packageType} ${formData.message ? '- ' + formData.message : ''}`,
+        oilType: formData.oilType || ''
       });
       setSuccess(true);
       // Takip kodu varsa göster
@@ -723,7 +747,8 @@ function Appointment() {
                 packageType: '',
                 date: '',
                 time: '',
-                message: ''
+                message: '',
+                oilType: ''
               });
               setStep(1);
               setManualCar(false);
@@ -865,6 +890,34 @@ function Appointment() {
                     <span className="text-gray-600">—</span>
                   )}
                   <span className="text-gray-600 truncate">{formData.service.join(', ')}</span>
+                </div>
+              )}
+
+              {/* Yağ Tipi Seçici - Periyodik Bakım veya Yağ içeren servis seçilince göster */}
+              {formData.service.some(s => s.toLowerCase().includes('periyodik') || s.toLowerCase().includes('yağ')) && (
+                <div className="border border-dark-800 p-6 space-y-4 animate-fade-in">
+                  <div className="flex items-center gap-3 mb-2">
+                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    <label className="text-xs tracking-widest font-light text-gray-400 uppercase">Yağ Tipi Seçimi (Opsiyonel)</label>
+                  </div>
+                  <select
+                    name="oilType"
+                    value={formData.oilType}
+                    onChange={handleChange}
+                    className="w-full bg-black border border-dark-900 hover:border-dark-700 px-4 py-4 text-sm focus:border-white focus:outline-none transition-colors font-light text-white"
+                  >
+                    <option value="">Seçiniz (Opsiyonel)</option>
+                    {oilTypes.map((oil) => (
+                      <option key={oil} value={oil}>{oil}</option>
+                    ))}
+                  </select>
+                  {formData.oilType && (
+                    <p className="text-xs text-gray-500 font-light">
+                      Seçilen yağ: <span className="text-white">{formData.oilType}</span>
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1144,6 +1197,12 @@ function Appointment() {
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
                     <span className="text-gray-500 font-light text-sm flex-shrink-0">Paket</span>
                     <span className="font-light text-sm text-right ml-4">{formData.packageType}</span>
+                  </div>
+                )}
+                {formData.oilType && (
+                  <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Yağ Tipi</span>
+                    <span className="font-light text-sm text-right ml-4 text-red-400">{formData.oilType}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start border-b border-dark-900 pb-4">

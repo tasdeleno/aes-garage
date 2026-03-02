@@ -99,6 +99,24 @@ function Admin() {
   const [siteImages, setSiteImages] = useState({ heroImage: '', logo: '' });
   const [uploadingImage, setUploadingImage] = useState(null);
 
+  // ─── Chiptuning & Yağ Tipleri ───
+  const [chiptuningData, setChiptuningData] = useState({
+    packages: [
+      { name: 'Stage 1', gainPercent: 15, description: 'ECU yazılım optimizasyonu', priceMin: 2500, priceMax: 4000 },
+      { name: 'Stage 2', gainPercent: 25, description: 'Yazılım + Donanım modifikasyonu', priceMin: 4000, priceMax: 7000 },
+      { name: 'Stage 3', gainPercent: 35, description: 'Tam performans paketi', priceMin: 7000, priceMax: 12000 },
+    ],
+    oilTypes: [
+      '5W-30 Full Sentetik',
+      '5W-40 Full Sentetik',
+      '0W-20 Full Sentetik',
+      '10W-40 Yarı Sentetik',
+      '15W-40 Mineral',
+      '5W-30 Yarı Sentetik',
+    ],
+  });
+  const [newOilType, setNewOilType] = useState('');
+
   // ─── Dinamik Servis Listesi ───
   const [servicesList, setServicesList] = useState(defaultServices);
 
@@ -230,6 +248,15 @@ function Admin() {
       if (img.logo) setSiteImages(prev => ({ ...prev, logo: img.logo }));
 
       try { if (general.servicesList) setServicesList(JSON.parse(general.servicesList)); } catch(e) {}
+      try {
+        if (general.chiptuningData) {
+          const parsed = JSON.parse(general.chiptuningData);
+          setChiptuningData(prev => ({
+            packages: Array.isArray(parsed.packages) && parsed.packages.length > 0 ? parsed.packages : prev.packages,
+            oilTypes: Array.isArray(parsed.oilTypes) && parsed.oilTypes.length > 0 ? parsed.oilTypes : prev.oilTypes,
+          }));
+        }
+      } catch(e) {}
 
       // İletişim bilgileri
       if (contact.phone) setContactInfo(prev => ({ ...prev, phone: contact.phone }));
@@ -467,6 +494,7 @@ function Admin() {
             { key: 'appointments', label: 'RANDEVULAR' },
             { key: 'messages', label: `MESAJLAR${unreadCount > 0 ? ` (${unreadCount})` : ''}` },
             { key: 'services', label: 'HİZMETLER & FİYATLAR' },
+            { key: 'chiptuning', label: 'CHİPTUNİNG' },
             { key: 'contact', label: 'İLETİŞİM BİLGİLERİ' },
             { key: 'homeContent', label: 'ANA SAYFA İÇERİK' },
           ].map(tab => (
@@ -806,6 +834,195 @@ function Admin() {
               <button onClick={saveAllHomeContent} disabled={saving}
                 className="w-full py-5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-light tracking-[0.2em] text-sm transition-all shadow-2xl shadow-red-900/30">
                 {saving ? 'KAYDEDİLİYOR...' : 'TÜM İÇERİĞİ KAYDET'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ TAB: CHİPTUNİNG ═══════════ */}
+        {activeTab === 'chiptuning' && (
+          <div className="space-y-8">
+            <div className="p-5 border border-red-600/20 bg-red-600/5">
+              <h2 className="text-lg font-light tracking-wider text-white mb-1">Chiptuning & Yağ Tipi Yönetimi</h2>
+              <p className="text-xs text-gray-500 font-light">
+                Chiptuning paketleri ve yağ seçeneklerini buradan yönetin.
+                Değişiklikler <strong className="text-white">Chiptuning</strong> ve <strong className="text-white">Randevu</strong> sayfalarına yansır.
+              </p>
+            </div>
+
+            {/* Chiptuning Paketleri */}
+            <div className="border border-dark-800 p-6">
+              <SectionTitle title="Chiptuning Paketleri" description="Stage paket isimleri, beygir güç artış yüzdesi ve fiyat aralıkları" />
+              <div className="space-y-4">
+                {chiptuningData.packages.map((pkg, i) => (
+                  <div key={i} className="border border-dark-700 p-5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-white font-light">{pkg.name || `Paket ${i + 1}`}</span>
+                      <button
+                        onClick={() => setChiptuningData(prev => ({
+                          ...prev,
+                          packages: prev.packages.filter((_, idx) => idx !== i)
+                        }))}
+                        className={btnDanger}
+                      >
+                        Sil
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs tracking-widest text-gray-600 mb-2">PAKET ADI</label>
+                        <input
+                          className={inputClass}
+                          value={pkg.name}
+                          onChange={e => {
+                            const c = [...chiptuningData.packages];
+                            c[i] = { ...c[i], name: e.target.value };
+                            setChiptuningData(prev => ({ ...prev, packages: c }));
+                          }}
+                          placeholder="Stage 1"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs tracking-widest text-gray-600 mb-2">GÜÇ ARTIŞI (%)</label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          value={pkg.gainPercent}
+                          onChange={e => {
+                            const c = [...chiptuningData.packages];
+                            c[i] = { ...c[i], gainPercent: Number(e.target.value) };
+                            setChiptuningData(prev => ({ ...prev, packages: c }));
+                          }}
+                          placeholder="15"
+                        />
+                        <Hint>Mevcut beygirin yüzdesi kadar artış. Örn: 15 → 150 HP → 172 HP</Hint>
+                      </div>
+                      <div>
+                        <label className="block text-xs tracking-widest text-gray-600 mb-2">MIN. FİYAT (₺)</label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          value={pkg.priceMin}
+                          onChange={e => {
+                            const c = [...chiptuningData.packages];
+                            c[i] = { ...c[i], priceMin: Number(e.target.value) };
+                            setChiptuningData(prev => ({ ...prev, packages: c }));
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs tracking-widest text-gray-600 mb-2">MAX. FİYAT (₺)</label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          value={pkg.priceMax}
+                          onChange={e => {
+                            const c = [...chiptuningData.packages];
+                            c[i] = { ...c[i], priceMax: Number(e.target.value) };
+                            setChiptuningData(prev => ({ ...prev, packages: c }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs tracking-widest text-gray-600 mb-2">AÇIKLAMA</label>
+                      <input
+                        className={inputClass}
+                        value={pkg.description || ''}
+                        onChange={e => {
+                          const c = [...chiptuningData.packages];
+                          c[i] = { ...c[i], description: e.target.value };
+                          setChiptuningData(prev => ({ ...prev, packages: c }));
+                        }}
+                        placeholder="ECU yazılım optimizasyonu"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={() => setChiptuningData(prev => ({
+                    ...prev,
+                    packages: [...prev.packages, { name: '', gainPercent: 15, description: '', priceMin: 0, priceMax: 0 }]
+                  }))}
+                  className={btnOutline + ' w-full py-3'}
+                >
+                  + YENİ PAKET EKLE
+                </button>
+              </div>
+            </div>
+
+            {/* Yağ Tipleri */}
+            <div className="border border-dark-800 p-6">
+              <SectionTitle title="Yağ Tipleri" description="Periyodik bakım ve yağ bakımı randevularında gösterilecek motor yağı seçenekleri" />
+              <div className="space-y-3">
+                {chiptuningData.oilTypes.map((oil, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <input
+                      className={inputClass}
+                      value={oil}
+                      onChange={e => {
+                        const c = [...chiptuningData.oilTypes];
+                        c[i] = e.target.value;
+                        setChiptuningData(prev => ({ ...prev, oilTypes: c }));
+                      }}
+                      placeholder="5W-30 Full Sentetik"
+                    />
+                    <button
+                      onClick={() => setChiptuningData(prev => ({
+                        ...prev,
+                        oilTypes: prev.oilTypes.filter((_, idx) => idx !== i)
+                      }))}
+                      className={btnDanger}
+                    >
+                      Sil
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 mt-4">
+                  <input
+                    className={inputClass}
+                    value={newOilType}
+                    onChange={e => setNewOilType(e.target.value)}
+                    placeholder="Yeni yağ tipi ekle..."
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newOilType.trim()) {
+                        setChiptuningData(prev => ({ ...prev, oilTypes: [...prev.oilTypes, newOilType.trim()] }));
+                        setNewOilType('');
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (newOilType.trim()) {
+                        setChiptuningData(prev => ({ ...prev, oilTypes: [...prev.oilTypes, newOilType.trim()] }));
+                        setNewOilType('');
+                      }
+                    }}
+                    className={btnOutline}
+                  >
+                    + EKLE
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-6 z-10">
+              <button
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await saveSetting('chiptuningData', JSON.stringify(chiptuningData), 'general');
+                    alert('Chiptuning verileri kaydedildi!');
+                  } catch (err) {
+                    alert('Kaydetme hatası: ' + (err.message || 'Bilinmeyen hata'));
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving}
+                className="w-full py-5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-light tracking-[0.2em] text-sm transition-all shadow-2xl shadow-red-900/30"
+              >
+                {saving ? 'KAYDEDİLİYOR...' : 'CHİPTUNİNG VERİLERİNİ KAYDET'}
               </button>
             </div>
           </div>
