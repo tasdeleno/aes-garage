@@ -5,43 +5,43 @@ import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
 
+const defaultServices = [
+  {
+    title: 'Periyodik Bakım',
+    description: 'Aracınızın düzenli bakım ihtiyaçlarını karşılayan kapsamlı servis programı',
+    image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
+    features: 'Motor yağı ve filtre değişimi\nFren sistemleri kontrolü\nSüspansiyon kontrolü\nLastik kontrolü ve balans\nElektriksel sistem kontrolü',
+    duration: '2-3 saat',
+    priceMin: '800', priceMax: '2.000', priceNote: 'Araç segmentine göre değişir',
+  },
+  {
+    title: 'Motor Bakımı',
+    description: 'Motorun maksimum performans ve verimlilikte çalışması için uzman bakım',
+    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+    features: 'Motor revizyonu\nTurbo bakımı\nEnjeksiyon sistemi temizliği\nTriger kayışı değişimi\nMotor performans testi',
+    duration: '4-6 saat',
+    priceMin: '1.500', priceMax: '8.000', priceNote: 'İşlem kapsamına göre değişir',
+  },
+  {
+    title: 'Fren Bakımı',
+    description: 'Güvenliğiniz için kritik öneme sahip fren sisteminin profesyonel bakımı',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
+    features: 'Fren balatası değişimi\nFren diski kontrolü ve değişimi\nFren hidroliği yenileme\nABS sistemi kontrolü\nEl freni ayarı',
+    duration: '2-3 saat',
+    priceMin: '500', priceMax: '2.500', priceNote: 'Parça durumuna göre değişir',
+  },
+  {
+    title: 'Lastik Değişimi',
+    description: 'Sürüş güvenliği ve konforu için profesyonel lastik bakımı',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
+    features: 'Lastik montaj/demontaj\nBalans ayarı\nRot ayarı\nLastik tamir\nMevsimlik değişim',
+    duration: '1-2 saat',
+    priceMin: '200', priceMax: '400', priceNote: 'Lastik bedeli hariç',
+  },
+];
+
 function Services() {
   const [instagramUrl, setInstagramUrl] = useState('');
-
-  const defaultServices = [
-    {
-      title: 'Periyodik Bakım',
-      description: 'Aracınızın düzenli bakım ihtiyaçlarını karşılayan kapsamlı servis programı',
-      image: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80',
-      features: 'Motor yağı ve filtre değişimi\nFren sistemleri kontrolü\nSüspansiyon kontrolü\nLastik kontrolü ve balans\nElektriksel sistem kontrolü',
-      duration: '2-3 saat',
-      priceMin: '800', priceMax: '2.000', priceNote: 'Araç segmentine göre değişir',
-    },
-    {
-      title: 'Motor Bakımı',
-      description: 'Motorun maksimum performans ve verimlilikte çalışması için uzman bakım',
-      image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
-      features: 'Motor revizyonu\nTurbo bakımı\nEnjeksiyon sistemi temizliği\nTriger kayışı değişimi\nMotor performans testi',
-      duration: '4-6 saat',
-      priceMin: '1.500', priceMax: '8.000', priceNote: 'İşlem kapsamına göre değişir',
-    },
-    {
-      title: 'Fren Bakımı',
-      description: 'Güvenliğiniz için kritik öneme sahip fren sisteminin profesyonel bakımı',
-      image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
-      features: 'Fren balatası değişimi\nFren diski kontrolü ve değişimi\nFren hidroliği yenileme\nABS sistemi kontrolü\nEl freni ayarı',
-      duration: '2-3 saat',
-      priceMin: '500', priceMax: '2.500', priceNote: 'Parça durumuna göre değişir',
-    },
-    {
-      title: 'Lastik Değişimi',
-      description: 'Sürüş güvenliği ve konforu için profesyonel lastik bakımı',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
-      features: 'Lastik montaj/demontaj\nBalans ayarı\nRot ayarı\nLastik tamir\nMevsimlik değişim',
-      duration: '1-2 saat',
-      priceMin: '200', priceMax: '400', priceNote: 'Lastik bedeli hariç',
-    },
-  ];
 
   const [services, setServices] = useState(defaultServices);
   const [servicesLoaded, setServicesLoaded] = useState(false);

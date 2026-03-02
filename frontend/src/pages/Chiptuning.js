@@ -49,21 +49,23 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
   }
 
   // İbrenin SVG dönüş açısı: yukarı (12 saat) = 0°, sola = -90°, sağa = +90°
-  function hpToRotation(hp) {
+  const calcRotation = (hp) => {
     const ratio = Math.max(0, Math.min(1, (hp - minHP) / (maxHP - minHP)));
     return -90 + ratio * 180;
-  }
+  };
 
-  const [rotation, setRotation] = useState(hpToRotation(currentHP));
+  const [rotation, setRotation] = useState(calcRotation(currentHP));
 
   useEffect(() => {
-    setRotation(hpToRotation(currentHP));
+    const ratio = Math.max(0, Math.min(1, (currentHP - minHP) / (maxHP - minHP)));
+    setRotation(-90 + ratio * 180);
   }, [currentHP, minHP, maxHP]);
 
   useEffect(() => {
     if (!animate) return;
     const timer = setTimeout(() => {
-      setRotation(hpToRotation(newHP));
+      const ratio = Math.max(0, Math.min(1, (newHP - minHP) / (maxHP - minHP)));
+      setRotation(-90 + ratio * 180);
     }, 400);
     return () => clearTimeout(timer);
   }, [animate, newHP, minHP, maxHP]);
