@@ -44,6 +44,7 @@ function Services() {
   ];
 
   const [services, setServices] = useState(defaultServices);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -72,14 +73,20 @@ function Services() {
                   ...s,
                   image: s.image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80'
                 }));
-              if (valid.length > 0) setServices(valid);
+              // valid boşsa varsayılan servislere geri dön
+              setServices(valid.length > 0 ? valid : defaultServices);
             }
+            // parsed boş array ise defaultServices korunur
           }
         } catch(e) {
           console.error('servicesList parse error:', e);
+          // parse hatası durumunda defaultServices korunur
         }
       } catch (error) {
         console.error('Servisler yüklenemedi:', error);
+        // API hatası durumunda defaultServices korunur
+      } finally {
+        setServicesLoaded(true);
       }
     };
 
@@ -163,7 +170,21 @@ function Services() {
 
       <section className="py-12 sm:py-20 md:py-32 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+          {!servicesLoaded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-gradient-to-b from-dark-900 to-black border border-dark-800 animate-pulse">
+                  <div className="h-48 sm:h-64 md:h-80 bg-dark-800"></div>
+                  <div className="p-4 sm:p-6 md:p-8 space-y-4">
+                    <div className="h-6 bg-dark-800 rounded w-2/3"></div>
+                    <div className="h-4 bg-dark-800 rounded w-full"></div>
+                    <div className="h-4 bg-dark-800 rounded w-5/6"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 ${!servicesLoaded ? 'hidden' : ''}`}>
             {services.map((service, index) => (
               <div
                 key={index}

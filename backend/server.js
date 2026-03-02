@@ -178,6 +178,7 @@ const AppointmentSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   time: { type: String, required: true },
   message: String,
+  oilType: { type: String, default: '' },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' },
   trackingCode: { type: String, unique: true },
   reminderSent: { type: Boolean, default: false },
@@ -309,7 +310,7 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 // Public: Randevu oluştur
 app.post('/api/appointments', formLimiter, async (req, res) => {
   try {
-    const { name, phone, email, service, date, time, message } = req.body;
+    const { name, phone, email, service, date, time, message, oilType } = req.body;
 
     const contactError = validateContact(name, email, phone);
     if (contactError) return res.status(400).json({ message: contactError });
@@ -331,6 +332,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
       service: sanitize(service),
       date, time,
       message: message ? sanitize(message) : '',
+      oilType: oilType ? sanitize(oilType) : '',
       trackingCode
     }).save();
 
@@ -339,7 +341,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
 
     const adminWhatsApp = process.env.ADMIN_WHATSAPP;
     if (adminWhatsApp) {
-      sendWhatsApp(adminWhatsApp, `🔔 *Yeni Randevu!*\n👤 ${name}\n📱 ${phone}\n🔧 ${service}\n📅 ${dateStr} - ${time}\n🚗 ${message || '-'}\n📋 Kod: ${trackingCode}`);
+      sendWhatsApp(adminWhatsApp, `🔔 *Yeni Randevu!*\n👤 ${name}\n📱 ${phone}\n🔧 ${service}\n📅 ${dateStr} - ${time}${oilType ? '\n🛢️ Yağ: ' + oilType : ''}\n🚗 ${message || '-'}\n📋 Kod: ${trackingCode}`);
     }
 
     if (email) {
