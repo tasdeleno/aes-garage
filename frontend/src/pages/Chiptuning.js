@@ -78,7 +78,6 @@ function SpeedometerGauge({ currentHP, newHP, animate }) {
   // Mevcut HP yayı (kırmızı)
   const curAngle = hpToAngle(currentHP);
   const curEnd = degToPoint(curAngle, r);
-  const curArcLarge = (180 - curAngle) > 180 ? 1 : 0;
   // Burada 0 0 yerine sweep flag'ine dikkat ederek çiziyoruz
   const curArc = `M ${bgStart.x} ${bgStart.y} A ${r} ${r} 0 0 1 ${curEnd.x} ${curEnd.y}`;
 
