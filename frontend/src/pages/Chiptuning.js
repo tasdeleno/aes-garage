@@ -190,7 +190,12 @@ function Chiptuning() {
   const [showResult, setShowResult] = useState(false);
   const [animating, setAnimating] = useState(false);
 
-  // Chiptuning paketlerini admin settings'ten çek
+  // Custom veriler (Admin'den)
+  const [customCars, setCustomCars] = useState([]);
+  const [customStages, setCustomStages] = useState([]);
+  const [combinedDb, setCombinedDb] = useState(carDatabase);
+
+  // Chiptuning paketlerini ve özel verileri admin settings'ten çek
   useEffect(() => {
     const fetchChipData = async () => {
       try {
@@ -204,6 +209,8 @@ function Chiptuning() {
           if (Array.isArray(parsed.packages) && parsed.packages.length > 0) {
             setChipPackages(parsed.packages);
           }
+          if (Array.isArray(parsed.customCars)) setCustomCars(parsed.customCars);
+          if (Array.isArray(parsed.customStages)) setCustomStages(parsed.customStages);
         }
       } catch (e) {
         console.error('Chiptuning verisi yüklenemedi:', e);
@@ -211,6 +218,29 @@ function Chiptuning() {
     };
     fetchChipData();
   }, []);
+
+  // carDatabase + customCars birleştirme
+  useEffect(() => {
+    const newDb = JSON.parse(JSON.stringify(carDatabase)); // Deep copy
+    customCars.forEach(cc => {
+      if (!newDb[cc.brand]) {
+        newDb[cc.brand] = { models: [], engines: {}, packages: ['Standart'] };
+      }
+      if (!newDb[cc.brand].models.includes(cc.model)) {
+        newDb[cc.brand].models.push(cc.model);
+      }
+      if (!newDb[cc.brand].engines[cc.model]) {
+        newDb[cc.brand].engines[cc.model] = [];
+      }
+      const engineStr = `${cc.engine} ${cc.hp} HP`;
+      if (!newDb[cc.brand].engines[cc.model].includes(engineStr)) {
+        newDb[cc.brand].engines[cc.model].push(engineStr);
+      }
+      newDb[cc.brand].models.sort();
+      newDb[cc.brand].engines[cc.model].sort();
+    });
+    setCombinedDb(newDb);
+  }, [customCars]);
 
   // Marka değişince model, motor ve yakıt sıfırla
   const handleBrandChange = (val) => {
@@ -244,7 +274,7 @@ function Chiptuning() {
     setAnimating(false);
   };
 
-  const brandData = brand ? carDatabase[brand] : null;
+  const brandData = brand ? combinedDb[brand] : null;
   const availableModels = brandData ? brandData.models : [];
 
   // Motor listesi: modele göre, yakıt tipine göre filtreli
@@ -256,9 +286,38 @@ function Chiptuning() {
     : allEngines;
 
   const currentHP = engine ? extractHP(engine) : null;
+
+  // Custom Stage olup olmadığını kontrol et
+  let customHP = null;
+  if (currentHP && selectedPackage) {
+    const engineNameMatch = engine.match(/^(.*?)\s+\d+\s*HP/i);
+    const rawEngineName = engineNameMatch ? engineNameMatch[1].trim() : engine.replace(/\s*\d+\s*HP/i, '').trim();
+
+    const customMatch = customStages.find(cs =>
+      cs.brand === brand &&
+      cs.model === model &&
+      (cs.engine === engine || cs.engine === rawEngineName)
+    );
+
+    if (customMatch) {
+      const stageNameLower = selectedPackage.name.toLowerCase();
+      if (stageNameLower.includes('stage 1') && customMatch.stage1HP) {
+        customHP = Number(customMatch.stage1HP);
+      } else if (stageNameLower.includes('stage 2') && customMatch.stage2HP) {
+        customHP = Number(customMatch.stage2HP);
+      } else if (stageNameLower.includes('stage 3') && customMatch.stage3HP) {
+        customHP = Number(customMatch.stage3HP);
+      }
+    }
+  }
+
   const newHP = currentHP && selectedPackage
-    ? Math.round(currentHP * (1 + (selectedPackage.gainPercent || 0) / 100))
+    ? (customHP !== null ? customHP : Math.round(currentHP * (1 + (selectedPackage.gainPercent || 0) / 100)))
     : null;
+
+  const gainPercentToDisplay = currentHP && newHP && customHP !== null
+    ? Math.round(((newHP - currentHP) / currentHP) * 100)
+    : (selectedPackage?.gainPercent || 0);
 
   const handleHesapla = () => {
     if (!currentHP || !selectedPackage) return;
@@ -358,7 +417,7 @@ function Chiptuning() {
                 className="w-full bg-black border border-dark-900 hover:border-dark-700 px-4 py-4 text-sm focus:border-white focus:outline-none transition-colors font-light"
               >
                 <option value="">Marka seçin</option>
-                {Object.keys(carDatabase).sort().map(b => (
+                {Object.keys(combinedDb).sort().map(b => (
                   <option key={b} value={b}>{b}</option>
                 ))}
               </select>
@@ -412,11 +471,10 @@ function Chiptuning() {
                         key={f}
                         type="button"
                         onClick={() => handleFuelChange(fuel === f ? '' : f)}
-                        className={`px-4 sm:px-6 py-2.5 sm:py-3 border font-light tracking-wider text-xs sm:text-sm transition-all ${
-                          fuel === f
-                            ? 'border-red-600 bg-red-600/10 text-white'
-                            : 'border-dark-800 text-gray-500 hover:border-gray-600 hover:text-white'
-                        }`}
+                        className={`px-4 sm:px-6 py-2.5 sm:py-3 border font-light tracking-wider text-xs sm:text-sm transition-all ${fuel === f
+                          ? 'border-red-600 bg-red-600/10 text-white'
+                          : 'border-dark-800 text-gray-500 hover:border-gray-600 hover:text-white'
+                          }`}
                       >
                         {f}
                       </button>
@@ -467,8 +525,6 @@ function Chiptuning() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {chipPackages.map((pkg) => {
-                    const pkgNewHP = Math.round(currentHP * (1 + (pkg.gainPercent || 0) / 100));
-                    const pkgGain = pkgNewHP - currentHP;
                     const isSelected = selectedPackage && selectedPackage.name === pkg.name;
                     return (
                       <button
@@ -479,15 +535,14 @@ function Chiptuning() {
                           setShowResult(false);
                           setAnimating(false);
                         }}
-                        className={`p-4 sm:p-5 border text-left transition-all duration-300 ${
-                          isSelected
-                            ? 'border-red-600 bg-red-600/10'
-                            : 'border-dark-800 hover:border-red-900'
-                        }`}
+                        className={`p-4 sm:p-5 border text-left transition-all duration-300 ${isSelected
+                          ? 'border-red-600 bg-red-600/10'
+                          : 'border-dark-800 hover:border-red-900'
+                          }`}
                       >
                         <div className="text-base sm:text-lg font-light tracking-wider mb-1">{pkg.name}</div>
                         <div className="text-red-500 text-sm font-light mb-2">
-                          +{pkg.gainPercent}% → {pkgNewHP} HP (+{pkgGain} HP)
+                          Seç & İncele
                         </div>
                         {pkg.description && (
                           <div className="text-gray-500 text-xs font-light mb-3">{pkg.description}</div>
@@ -565,7 +620,7 @@ function Chiptuning() {
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500 font-light">Güç Artışı</span>
-                    <span className="font-light text-red-400">+{selectedPackage.gainPercent}%</span>
+                    <span className="font-light text-red-400">+{gainPercentToDisplay}% (+{newHP - currentHP} HP)</span>
                   </div>
                   {selectedPackage.description && (
                     <div className="flex justify-between items-center text-sm">
@@ -586,7 +641,7 @@ function Chiptuning() {
                 {/* CTA Butonları */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
-                    to="/randevu"
+                    to={`/randevu?service=Chiptuning&brand=${encodeURIComponent(brand)}&model=${encodeURIComponent(model)}&engine=${encodeURIComponent(engine)}&chipPackage=${encodeURIComponent(selectedPackage.name)}`}
                     className="flex-1 group relative overflow-hidden py-4 border border-red-600 text-center transition-all duration-300"
                   >
                     <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
@@ -631,7 +686,7 @@ function Chiptuning() {
             ))}
           </div>
           <Link
-            to="/randevu"
+            to="/randevu?service=Chiptuning"
             className="inline-block group relative overflow-hidden px-10 sm:px-16 py-4 sm:py-5 border border-red-600"
           >
             <div className="absolute inset-0 bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>

@@ -114,8 +114,16 @@ function Admin() {
       '15W-40 Mineral',
       '5W-30 Yarı Sentetik',
     ],
+    customCars: [],
+    customStages: [],
   });
   const [newOilType, setNewOilType] = useState('');
+  
+  // ─── Özel Araç Ekleme Form State ───
+  const [newCustomCar, setNewCustomCar] = useState({ brand: '', model: '', engine: '', hp: '', year: '' });
+  // ─── Özel Stage HP Ekleme Form State ───
+  const [newCustomStage, setNewCustomStage] = useState({ brand: '', model: '', engine: '', stage1HP: '', stage2HP: '', stage3HP: '' });
+
 
   // ─── Dinamik Servis Listesi ───
   const [servicesList, setServicesList] = useState(defaultServices);
@@ -254,6 +262,8 @@ function Admin() {
           setChiptuningData(prev => ({
             packages: Array.isArray(parsed.packages) && parsed.packages.length > 0 ? parsed.packages : prev.packages,
             oilTypes: Array.isArray(parsed.oilTypes) && parsed.oilTypes.length > 0 ? parsed.oilTypes : prev.oilTypes,
+            customCars: Array.isArray(parsed.customCars) ? parsed.customCars : [],
+            customStages: Array.isArray(parsed.customStages) ? parsed.customStages : [],
           }));
         }
       } catch(e) {}
@@ -1002,6 +1012,103 @@ function Admin() {
                   >
                     + EKLE
                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Özel Araç Ekleme */}
+            <div className="border border-dark-800 p-6">
+              <SectionTitle title="Özel Araç Veritabanı" description="Sistemde olmayan (marka, model, motor vb.) özel araçları buradan ekleyin." />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                  <input className={inputClass} placeholder="Marka" value={newCustomCar.brand} onChange={e => setNewCustomCar({ ...newCustomCar, brand: e.target.value })} />
+                  <input className={inputClass} placeholder="Model" value={newCustomCar.model} onChange={e => setNewCustomCar({ ...newCustomCar, model: e.target.value })} />
+                  <input className={inputClass} placeholder="Motor" value={newCustomCar.engine} onChange={e => setNewCustomCar({ ...newCustomCar, engine: e.target.value })} />
+                  <input className={inputClass} type="number" placeholder="Mevcut HP" value={newCustomCar.hp} onChange={e => setNewCustomCar({ ...newCustomCar, hp: e.target.value })} />
+                  <button 
+                    onClick={() => {
+                      if (newCustomCar.brand && newCustomCar.model && newCustomCar.engine && newCustomCar.hp) {
+                        setChiptuningData(prev => ({ ...prev, customCars: [...(prev.customCars || []), newCustomCar] }));
+                        setNewCustomCar({ brand: '', model: '', engine: '', hp: '', year: '' });
+                      } else {
+                        alert('Marka, Model, Motor ve HP zorunludur.');
+                      }
+                    }}
+                    className={btnOutline}
+                  >
+                    + ARAÇ EKLE
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {(chiptuningData.customCars || []).map((car, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 border border-dark-700 bg-dark-900/50">
+                      <div className="text-sm font-light text-gray-300">
+                        <span className="text-white">{car.brand} {car.model}</span> — {car.engine} ({car.hp} HP)
+                      </div>
+                      <button 
+                        onClick={() => setChiptuningData(prev => ({ ...prev, customCars: prev.customCars.filter((_, idx) => idx !== i) }))}
+                        className={btnDanger}
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  ))}
+                  {(chiptuningData.customCars || []).length === 0 && (
+                    <p className="text-sm text-gray-500 font-light py-2">Özel eklenmiş araç bulunmuyor.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Özel Stage HP Ekleme */}
+            <div className="border border-dark-800 p-6">
+              <SectionTitle title="Özel Stage Değerleri (Custom HP)" description="Araçlar için varsayılan yüzdelik hesaplama yerine kesin beygir gücü tanımlayın." />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <input className={inputClass} placeholder="Marka" value={newCustomStage.brand} onChange={e => setNewCustomStage({ ...newCustomStage, brand: e.target.value })} />
+                  <input className={inputClass} placeholder="Model" value={newCustomStage.model} onChange={e => setNewCustomStage({ ...newCustomStage, model: e.target.value })} />
+                  <input className={inputClass} placeholder="Motor" value={newCustomStage.engine} onChange={e => setNewCustomStage({ ...newCustomStage, engine: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input className={inputClass} type="number" placeholder="Stage 1 HP" value={newCustomStage.stage1HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage1HP: e.target.value })} />
+                  <input className={inputClass} type="number" placeholder="Stage 2 HP" value={newCustomStage.stage2HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage2HP: e.target.value })} />
+                  <input className={inputClass} type="number" placeholder="Stage 3 HP" value={newCustomStage.stage3HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage3HP: e.target.value })} />
+                  <button 
+                    onClick={() => {
+                      if (newCustomStage.brand && newCustomStage.model && newCustomStage.engine) {
+                        setChiptuningData(prev => ({ ...prev, customStages: [...(prev.customStages || []), newCustomStage] }));
+                        setNewCustomStage({ brand: '', model: '', engine: '', stage1HP: '', stage2HP: '', stage3HP: '' });
+                      } else {
+                        alert('Marka, Model ve Motor zorunludur.');
+                      }
+                    }}
+                    className={btnOutline}
+                  >
+                    + DEĞER EKLE
+                  </button>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  {(chiptuningData.customStages || []).map((stage, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 border border-dark-700 bg-dark-900/50">
+                      <div className="text-sm font-light text-gray-300">
+                        <span className="text-white">{stage.brand} {stage.model}</span> — {stage.engine}
+                        <div className="text-xs text-red-400 mt-1">
+                          [Stage 1: {stage.stage1HP || '-'}] [Stage 2: {stage.stage2HP || '-'}] [Stage 3: {stage.stage3HP || '-'}]
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setChiptuningData(prev => ({ ...prev, customStages: prev.customStages.filter((_, idx) => idx !== i) }))}
+                        className={btnDanger}
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  ))}
+                  {(chiptuningData.customStages || []).length === 0 && (
+                    <p className="text-sm text-gray-500 font-light py-2">Özel stage değeri tanımlanmamış.</p>
+                  )}
                 </div>
               </div>
             </div>
