@@ -145,12 +145,12 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc:  ["'self'"],
-      styleSrc:   ["'self'", "'unsafe-inline'"],
-      imgSrc:     ["'self'", 'data:', 'https://res.cloudinary.com', 'https://images.unsplash.com'],
+      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      imgSrc:     ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com', 'https://images.unsplash.com', 'https://*.googleapis.com', 'https://*.gstatic.com'],
       connectSrc: ["'self'"],
-      fontSrc:    ["'self'", 'data:'],
+      fontSrc:    ["'self'", 'data:', 'https://fonts.gstatic.com'],
       objectSrc:  ["'none'"],
-      frameSrc:   ["'none'"],
+      frameSrc:   ["https://maps.google.com", "https://www.google.com"],
     },
   },
 }));
