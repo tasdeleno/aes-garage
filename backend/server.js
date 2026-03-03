@@ -15,6 +15,9 @@ const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production';
+const COOKIE_OPTIONS = { httpOnly: true, secure: isProduction, sameSite: 'strict' };
+
 // ============ CLOUDINARY CONFIG ============
 if (process.env.CLOUDINARY_CLOUD_NAME) {
   cloudinary.config({
@@ -162,6 +165,8 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { message: 'Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const trackLimiter = rateLimit({
@@ -314,12 +319,7 @@ app.post('/api/auth/login', loginLimiter, (req, res) => {
   }
   if (password === process.env.ADMIN_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.cookie('aes_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 86400000
-    });
+    res.cookie('aes_token', token, { ...COOKIE_OPTIONS, maxAge: 86400000 });
     res.json({ success: true, expiresIn: 86400 });
   } else {
     res.status(401).json({ message: 'Yanlış şifre!' });
@@ -331,11 +331,7 @@ app.get('/api/auth/verify', authMiddleware, (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('aes_token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
+  res.clearCookie('aes_token', COOKIE_OPTIONS);
   res.json({ success: true });
 });
 
@@ -460,7 +456,7 @@ app.put('/api/appointments/cancel/:code', trackLimiter, async (req, res) => {
     appointment.status = 'cancelled';
     await appointment.save();
 
-    const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
+    const dateStr = new Date(oldAppointment.date).toLocaleDateString('tr-TR');
     if (appointment.phone) {
       sendWhatsApp(appointment.phone, `❌ AES Garage - Randevunuz iptal edildi.\n📅 ${dateStr} - ${appointment.time}\n🔧 ${appointment.service}\nYeni randevu için: aesgarage.com/randevu`);
     }
@@ -540,40 +536,39 @@ app.get('/api/appointments/:id', authMiddleware, async (req, res) => {
 
 app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
   try {
-    const oldAppointment = await Appointment.findById(req.params.id);
-    if (!oldAppointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
-    const oldStatus = oldAppointment.status;
-
     const { status } = req.body;
     if (!['pending', 'confirmed', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Geçersiz durum' });
     }
-    const appointment = await Appointment.findByIdAndUpdate(
+    // { new: false } returns pre-update doc — single DB round trip
+    const oldAppointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { new: false }
     );
-    const newStatus = appointment.status;
+    if (!oldAppointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
+    const oldStatus = oldAppointment.status;
+    const newStatus = status;
 
     // Durum değişikliğinde müşteriye bildirim gönder
-    if (oldStatus !== newStatus && appointment.email) {
-      const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
-      const details = emailLine('📅', `${dateStr} - ${appointment.time}`, true) + emailLine('🔧', escapeHtml(appointment.service));
+    if (oldStatus !== newStatus && oldAppointment.email) {
+      const dateStr = new Date(oldAppointment.date).toLocaleDateString('tr-TR');
+      const details = emailLine('📅', `${dateStr} - ${oldAppointment.time}`, true) + emailLine('🔧', escapeHtml(oldAppointment.service));
 
       if (newStatus === 'confirmed') {
-        sendEmail(appointment.email, `AES Garage - Randevunuz Onaylandı ✅`,
+        sendEmail(oldAppointment.email, `AES Garage - Randevunuz Onaylandı ✅`,
           emailTemplate(
-            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(appointment.name)}</strong>,</p>
+            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(oldAppointment.name)}</strong>,</p>
             <p style="color:#22c55e;">Randevunuz onaylanmıştır!</p>
-            ${emailBlock(details + emailLine('📋', `Takip Kodu: ${appointment.trackingCode}`), '#22c55e')}
+            ${emailBlock(details + emailLine('📋', `Takip Kodu: ${oldAppointment.trackingCode}`), '#22c55e')}
             <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
             <p style="color:#666;font-size:12px;">İptal/değişiklik için: aesgarage.com/randevu-takip</p>`
           )
         );
       } else if (newStatus === 'cancelled') {
-        sendEmail(appointment.email, 'AES Garage - Randevunuz İptal Edildi',
+        sendEmail(oldAppointment.email, 'AES Garage - Randevunuz İptal Edildi',
           emailTemplate(
-            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(appointment.name)}</strong>,</p>
+            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(oldAppointment.name)}</strong>,</p>
             <p style="color:#ef4444;">Aşağıdaki randevunuz iptal edilmiştir:</p>
             ${emailBlock(details)}
             <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/randevu</p>`
@@ -582,7 +577,7 @@ app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    res.json(appointment);
+    res.json({ ...oldAppointment.toObject(), status });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

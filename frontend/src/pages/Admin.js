@@ -5,7 +5,6 @@ const API = process.env.REACT_APP_API_URL || '';
 
 axios.defaults.withCredentials = true;
 
-
 async function saveSetting(key, value, category) {
   await axios.post(`${API}/api/settings`, { key, value, category });
 }
@@ -172,7 +171,7 @@ function Admin() {
   const [ctaContent, setCtaContent] = useState({ title: 'HAZIR MISINIZ?', subtitle: 'Aracınız için en iyi bakımı almanın zamanı geldi' });
 
   // ════════════════════════════════════
-  //  LOGIN (JWT)
+  //  LOGIN (COOKIE)
   // ════════════════════════════════════
   // Sayfa yüklendiğinde cookie kontrolü
   useEffect(() => {
@@ -193,8 +192,13 @@ function Admin() {
   };
 
   const handleLogout = async () => {
-    await axios.post(`${API}/api/auth/logout`);
-    setIsAuthenticated(false);
+    try {
+      await axios.post(`${API}/api/auth/logout`);
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   // ════════════════════════════════════
