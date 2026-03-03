@@ -10,6 +10,8 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
 const { Resend } = require('resend');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
@@ -133,7 +135,9 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50kb' }));
+app.use(cookieParser());
+app.use(helmet());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rate Limiting
@@ -158,6 +162,14 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { message: 'Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin.' },
+});
+
+const trackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: 'Çok fazla sorgu gönderildi. Lütfen 15 dakika sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // ============ MongoDB Connection ============
@@ -226,7 +238,7 @@ const storage = process.env.CLOUDINARY_CLOUD_NAME
   : multer.diskStorage({
       destination: (req, file, cb) => cb(null, uploadDir),
       filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+        cb(null, crypto.randomBytes(16).toString('hex') + path.extname(file.originalname));
       }
     });
 
@@ -245,12 +257,12 @@ const upload = multer({
 
 // ============ AUTH MIDDLEWARE ============
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.cookies?.aes_token;
+  if (!token) {
     return res.status(401).json({ message: 'Yetkilendirme gerekli' });
   }
   try {
-    req.admin = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    req.admin = jwt.verify(token, process.env.JWT_SECRET);
     next();
   } catch {
     return res.status(401).json({ message: 'Geçersiz veya süresi dolmuş token' });
@@ -259,6 +271,10 @@ const authMiddleware = (req, res, next) => {
 
 // ============ INPUT VALIDATION ============
 const sanitize = (str) => typeof str !== 'string' ? str : str.trim().replace(/<[^>]*>/g, '');
+const escapeHtml = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  .replace(/'/g, '&#x27;');
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhone = (phone) => /^(\+?90|0)?[5][0-9]{9}$/.test(phone.replace(/[\s\-\(\)]/g, ''));
 const isValidName = (name) => name && name.trim().length >= 2 && name.trim().length <= 100;
@@ -293,9 +309,18 @@ app.get('/api', (req, res) => {
 // ============ AUTH ============
 app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { password } = req.body;
-  if (password === (process.env.ADMIN_PASSWORD || 'admin123')) {
+  if (!process.env.ADMIN_PASSWORD) {
+    return res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
+  }
+  if (password === process.env.ADMIN_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, expiresIn: 86400 });
+    res.cookie('aes_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 86400000
+    });
+    res.json({ success: true, expiresIn: 86400 });
   } else {
     res.status(401).json({ message: 'Yanlış şifre!' });
   }
@@ -303,6 +328,15 @@ app.post('/api/auth/login', loginLimiter, (req, res) => {
 
 app.get('/api/auth/verify', authMiddleware, (req, res) => {
   res.json({ valid: true, role: req.admin.role });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('aes_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.json({ success: true });
 });
 
 // ============ APPOINTMENTS ============
@@ -315,6 +349,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
     const contactError = validateContact(name, email, phone);
     if (contactError) return res.status(400).json({ message: contactError });
     if (!service || service.trim().length === 0) return res.status(400).json({ message: 'Hizmet seçimi zorunludur' });
+    if (service.trim().length > 200) return res.status(400).json({ message: 'Geçersiz hizmet seçimi' });
     if (!date || !time) return res.status(400).json({ message: 'Tarih ve saat seçimi zorunludur' });
 
     const dateTimeCheck = isValidAppointmentDateTime(date, time);
@@ -347,9 +382,9 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
     if (email) {
       sendEmail(email, `AES Garage - Randevu Onayı (${trackingCode})`,
         emailTemplate(
-          `<p style="color:#ccc;">Merhaba <strong>${name}</strong>,</p>
+          `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(name)}</strong>,</p>
           <p style="color:#ccc;">Randevunuz başarıyla oluşturuldu.</p>
-          ${emailBlock(emailLine('📅', `${dateStr} - ${time}`, true) + emailLine('🔧', service))}
+          ${emailBlock(emailLine('📅', `${dateStr} - ${time}`, true) + emailLine('🔧', escapeHtml(service)))}
           <div style="text-align:center;padding:20px;background:#dc2626;margin:15px 0;">
             <p style="margin:0;font-size:12px;color:#fca5a5;">TAKİP KODUNUZ</p>
             <p style="margin:5px 0;font-size:24px;font-weight:300;letter-spacing:3px;color:#fff;">${trackingCode}</p>
@@ -391,24 +426,24 @@ app.get('/api/appointments/availability', async (req, res) => {
 
     res.json(availability);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
 // Public: Randevu sorgula (tracking code ile)
-app.get('/api/appointments/track/:code', async (req, res) => {
+app.get('/api/appointments/track/:code', trackLimiter, async (req, res) => {
   try {
     const appointment = await Appointment.findOne({ trackingCode: req.params.code })
       .select('name service date time status trackingCode').lean();
     if (!appointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
     res.json(appointment);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
 // Public: Randevu iptal et (tracking code ile)
-app.put('/api/appointments/cancel/:code', async (req, res) => {
+app.put('/api/appointments/cancel/:code', trackLimiter, async (req, res) => {
   try {
     const appointment = await Appointment.findOne({ trackingCode: req.params.code });
     if (!appointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
@@ -432,9 +467,9 @@ app.put('/api/appointments/cancel/:code', async (req, res) => {
     if (appointment.email) {
       sendEmail(appointment.email, 'AES Garage - Randevu İptali',
         emailTemplate(
-          `<p style="color:#ccc;">Merhaba ${appointment.name},</p>
+          `<p style="color:#ccc;">Merhaba ${escapeHtml(appointment.name)},</p>
           <p style="color:#ccc;">Aşağıdaki randevunuz iptal edilmiştir:</p>
-          ${emailBlock(emailLine('📅', `${dateStr} - ${appointment.time}`) + emailLine('🔧', appointment.service))}
+          ${emailBlock(emailLine('📅', `${dateStr} - ${appointment.time}`) + emailLine('🔧', escapeHtml(appointment.service)))}
           <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/randevu</p>`
         )
       );
@@ -442,12 +477,12 @@ app.put('/api/appointments/cancel/:code', async (req, res) => {
 
     res.json({ message: 'Randevunuz iptal edildi', appointment });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
 // Public: Randevu ertele (tracking code ile)
-app.put('/api/appointments/reschedule/:code', async (req, res) => {
+app.put('/api/appointments/reschedule/:code', trackLimiter, async (req, res) => {
   try {
     const { date, time } = req.body;
     const appointment = await Appointment.findOne({ trackingCode: req.params.code });
@@ -466,7 +501,7 @@ app.put('/api/appointments/reschedule/:code', async (req, res) => {
     await appointment.save();
     res.json({ message: 'Randevunuz güncellendi', appointment });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -474,7 +509,7 @@ app.put('/api/appointments/reschedule/:code', async (req, res) => {
 app.get('/api/appointments', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const skip = (page - 1) * limit;
     const filter = {};
     if (req.query.status && req.query.status !== 'all') filter.status = req.query.status;
@@ -489,7 +524,7 @@ app.get('/api/appointments', authMiddleware, async (req, res) => {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -499,7 +534,7 @@ app.get('/api/appointments/:id', authMiddleware, async (req, res) => {
     if (!appointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
     res.json(appointment);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -509,18 +544,26 @@ app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
     if (!oldAppointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
     const oldStatus = oldAppointment.status;
 
-    const appointment = await Appointment.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { status } = req.body;
+    if (!['pending', 'confirmed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Geçersiz durum' });
+    }
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
     const newStatus = appointment.status;
 
     // Durum değişikliğinde müşteriye bildirim gönder
     if (oldStatus !== newStatus && appointment.email) {
       const dateStr = new Date(appointment.date).toLocaleDateString('tr-TR');
-      const details = emailLine('📅', `${dateStr} - ${appointment.time}`, true) + emailLine('🔧', appointment.service);
+      const details = emailLine('📅', `${dateStr} - ${appointment.time}`, true) + emailLine('🔧', escapeHtml(appointment.service));
 
       if (newStatus === 'confirmed') {
         sendEmail(appointment.email, `AES Garage - Randevunuz Onaylandı ✅`,
           emailTemplate(
-            `<p style="color:#ccc;">Merhaba <strong>${appointment.name}</strong>,</p>
+            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(appointment.name)}</strong>,</p>
             <p style="color:#22c55e;">Randevunuz onaylanmıştır!</p>
             ${emailBlock(details + emailLine('📋', `Takip Kodu: ${appointment.trackingCode}`), '#22c55e')}
             <p style="color:#ccc;font-size:13px;">📍 Küçükbakkalköy Yolu Cd. No:44/B, Ataşehir/İstanbul</p>
@@ -530,7 +573,7 @@ app.put('/api/appointments/:id', authMiddleware, async (req, res) => {
       } else if (newStatus === 'cancelled') {
         sendEmail(appointment.email, 'AES Garage - Randevunuz İptal Edildi',
           emailTemplate(
-            `<p style="color:#ccc;">Merhaba <strong>${appointment.name}</strong>,</p>
+            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(appointment.name)}</strong>,</p>
             <p style="color:#ef4444;">Aşağıdaki randevunuz iptal edilmiştir:</p>
             ${emailBlock(details)}
             <p style="color:#666;font-size:12px;">Yeni randevu almak için: aesgarage.com/randevu</p>`
@@ -551,7 +594,7 @@ app.delete('/api/appointments/:id', authMiddleware, async (req, res) => {
     if (!appointment) return res.status(404).json({ message: 'Randevu bulunamadı' });
     res.json({ message: 'Randevu silindi' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -584,7 +627,7 @@ app.post('/api/contact', formLimiter, async (req, res) => {
 app.get('/api/contact', authMiddleware, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const skip = (page - 1) * limit;
 
     const [total, messages] = await Promise.all([
@@ -594,7 +637,7 @@ app.get('/api/contact', authMiddleware, async (req, res) => {
 
     res.json({ messages, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -604,7 +647,7 @@ app.put('/api/contact/:id/read', authMiddleware, async (req, res) => {
     if (!message) return res.status(404).json({ message: 'Mesaj bulunamadı' });
     res.json(message);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -614,7 +657,7 @@ app.delete('/api/contact/:id', authMiddleware, async (req, res) => {
     if (!message) return res.status(404).json({ message: 'Mesaj bulunamadı' });
     res.json({ message: 'Mesaj silindi' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -638,7 +681,7 @@ app.post('/api/upload', authMiddleware, upload.single('image'), async (req, res)
     }
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -648,7 +691,7 @@ app.get('/api/settings', async (req, res) => {
   try {
     res.json(await Settings.find().lean());
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -656,7 +699,7 @@ app.get('/api/settings/:category', async (req, res) => {
   try {
     res.json(await Settings.find({ category: req.params.category }).lean());
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -666,7 +709,7 @@ app.get('/api/settings/key/:key', async (req, res) => {
     if (!setting) return res.status(404).json({ message: 'Ayar bulunamadı' });
     res.json(setting);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -700,7 +743,7 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
     if (!setting) return res.status(404).json({ message: 'Ayar bulunamadı' });
     res.json({ message: 'Ayar silindi' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
@@ -747,11 +790,11 @@ async function checkReminders() {
       if (apt.email) {
         await sendEmail(apt.email, `AES Garage - Randevu Hatırlatma (${apt.trackingCode})`,
           emailTemplate(
-            `<p style="color:#ccc;">Merhaba <strong>${apt.name}</strong>,</p>
+            `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(apt.name)}</strong>,</p>
             <p style="color:#ccc;">Yarınki randevunuzu hatırlatmak isteriz:</p>
             ${emailBlock(
               emailLine('📅', `${dateStr} - ${apt.time}`, true) +
-              emailLine('🔧', apt.service) +
+              emailLine('🔧', escapeHtml(apt.service)) +
               emailLine('📋', `Takip Kodu: ${apt.trackingCode}`),
               '#f59e0b'
             )}

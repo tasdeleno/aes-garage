@@ -3,14 +3,11 @@ import axios from 'axios';
 
 const API = process.env.REACT_APP_API_URL || '';
 
-// ─── Auth helper: header'a token ekle ───
-function authHeader() {
-  const token = localStorage.getItem('aes_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+axios.defaults.withCredentials = true;
+
 
 async function saveSetting(key, value, category) {
-  await axios.post(`${API}/api/settings`, { key, value, category }, { headers: authHeader() });
+  await axios.post(`${API}/api/settings`, { key, value, category });
 }
 
 function Hint({ children }) {
@@ -177,21 +174,17 @@ function Admin() {
   // ════════════════════════════════════
   //  LOGIN (JWT)
   // ════════════════════════════════════
-  // Sayfa yüklendiğinde token kontrolü
+  // Sayfa yüklendiğinde cookie kontrolü
   useEffect(() => {
-    const token = localStorage.getItem('aes_token');
-    if (token) {
-      axios.get(`${API}/api/auth/verify`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(() => setIsAuthenticated(true))
-        .catch(() => { localStorage.removeItem('aes_token'); });
-    }
+    axios.get(`${API}/api/auth/verify`)
+      .then(() => setIsAuthenticated(true))
+      .catch(() => setIsAuthenticated(false));
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API}/api/auth/login`, { password });
-      localStorage.setItem('aes_token', res.data.token);
+      await axios.post(`${API}/api/auth/login`, { password });
       setIsAuthenticated(true);
       setError('');
     } catch (err) {
@@ -199,8 +192,8 @@ function Admin() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('aes_token');
+  const handleLogout = async () => {
+    await axios.post(`${API}/api/auth/logout`);
     setIsAuthenticated(false);
   };
 
@@ -211,7 +204,6 @@ function Admin() {
     try {
       setLoading(true);
       const response = await axios.get(`${API}/api/appointments`, {
-        headers: authHeader(),
         params: { page, limit: 20, status: statusFilter }
       });
       const data = response.data;
@@ -233,7 +225,7 @@ function Admin() {
 
   const fetchContactMessages = async () => {
     try {
-      const response = await axios.get(`${API}/api/contact`, { headers: authHeader() });
+      const response = await axios.get(`${API}/api/contact`);
       setContactMessages(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error('Error:', err);
@@ -310,14 +302,14 @@ function Admin() {
   // ════════════════════════════════════
   const updateAppointmentStatus = async (id, status) => {
     try {
-      await axios.put(`${API}/api/appointments/${id}`, { status }, { headers: authHeader() });
+      await axios.put(`${API}/api/appointments/${id}`, { status });
       fetchAppointments(pagination.page);
     } catch (err) { console.error(err); }
   };
   const deleteAppointment = async (id) => {
     if (window.confirm('Silmek istediğinize emin misiniz?')) {
       try {
-        await axios.delete(`${API}/api/appointments/${id}`, { headers: authHeader() });
+        await axios.delete(`${API}/api/appointments/${id}`);
         fetchAppointments(pagination.page);
       } catch (err) { console.error(err); }
     }
@@ -328,14 +320,14 @@ function Admin() {
   // ════════════════════════════════════
   const markMessageRead = async (id) => {
     try {
-      await axios.put(`${API}/api/contact/${id}/read`, {}, { headers: authHeader() });
+      await axios.put(`${API}/api/contact/${id}/read`, {});
       fetchContactMessages();
     } catch (err) { console.error(err); }
   };
   const deleteMessage = async (id) => {
     if (window.confirm('Mesajı silmek istediğinize emin misiniz?')) {
       try {
-        await axios.delete(`${API}/api/contact/${id}`, { headers: authHeader() });
+        await axios.delete(`${API}/api/contact/${id}`);
         fetchContactMessages();
       } catch (err) { console.error(err); }
     }
@@ -348,7 +340,7 @@ function Admin() {
     const fd = new FormData();
     fd.append('image', file);
     const res = await axios.post(`${API}/api/upload`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data', ...authHeader() }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
     return res.data.url;
   };
