@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import SEOHead from '../components/SEOHead';
 
@@ -46,11 +46,10 @@ function TrackingBox() {
           <button
             type="submit"
             disabled={!trackCode.trim() || trackLoading}
-            className={`px-5 sm:px-6 py-3 text-xs tracking-widest font-light transition-all whitespace-nowrap ${
-              trackCode.trim() && !trackLoading
-                ? 'border border-red-600 text-red-400 hover:bg-red-600 hover:text-white'
-                : 'border border-dark-900 text-gray-700 cursor-not-allowed'
-            }`}
+            className={`px-5 sm:px-6 py-3 text-xs tracking-widest font-light transition-all whitespace-nowrap ${trackCode.trim() && !trackLoading
+              ? 'border border-red-600 text-red-400 hover:bg-red-600 hover:text-white'
+              : 'border border-dark-900 text-gray-700 cursor-not-allowed'
+              }`}
           >
             {trackLoading ? '...' : 'SORGULA'}
           </button>
@@ -231,13 +230,12 @@ function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep 
                   type="button"
                   disabled={isFull}
                   onClick={() => setFormData(prev => ({ ...prev, time }))}
-                  className={`py-3 sm:py-4 border font-light text-xs sm:text-sm transition-all touch-manipulation ${
-                    isFull
-                      ? 'border-dark-900 text-gray-700 cursor-not-allowed line-through'
-                      : isSelected
-                        ? 'border-red-600 bg-red-600/10 text-white'
-                        : 'border-dark-900 hover:border-white text-gray-300'
-                  }`}
+                  className={`py-3 sm:py-4 border font-light text-xs sm:text-sm transition-all touch-manipulation ${isFull
+                    ? 'border-dark-900 text-gray-700 cursor-not-allowed line-through'
+                    : isSelected
+                      ? 'border-red-600 bg-red-600/10 text-white'
+                      : 'border-dark-900 hover:border-white text-gray-300'
+                    }`}
                 >
                   {time}
                   {isFull && <span className="block text-[10px] text-gray-600 mt-1">Dolu</span>}
@@ -255,11 +253,10 @@ function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep 
         </button>
         <button type="button" onClick={nextStep}
           disabled={!formData.date || !formData.time || !!dateError}
-          className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${
-            formData.date && formData.time && !dateError
-              ? 'border-white hover:bg-white hover:text-black'
-              : 'border-dark-900 text-gray-700 cursor-not-allowed'
-          }`}>
+          className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${formData.date && formData.time && !dateError
+            ? 'border-white hover:bg-white hover:text-black'
+            : 'border-dark-900 text-gray-700 cursor-not-allowed'
+            }`}>
           DEVAM ET
         </button>
       </div>
@@ -268,18 +265,29 @@ function DateTimeStep({ formData, setFormData, handleChange, nextStep, prevStep 
 }
 
 function Appointment() {
+  const location = useLocation();
+
+  // URL'den olası verileri al
+  const queryParams = new URLSearchParams(location.search);
+  const initialService = queryParams.get('service');
+  const initialBrand = queryParams.get('brand');
+  const initialModel = queryParams.get('model');
+  const initialEngine = queryParams.get('engine');
+  const initialChipPackage = queryParams.get('chipPackage');
+
   const [step, setStep] = useState(1);
   const [manualCar, setManualCar] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
-    service: [],
-    carBrand: '',
-    carModel: '',
+    service: initialService ? [initialService] : [],
+    carBrand: initialBrand || '',
+    carModel: initialModel || '',
     carYear: '',
-    engineType: '',
-    packageType: '',
+    engineType: initialEngine || '',
+    packageType: '', // Donanım paketi
+    chiptuningPackage: initialChipPackage || '', // Chiptuning için paket
     date: '',
     time: '',
     message: '',
@@ -290,6 +298,11 @@ function Appointment() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  // Custom data states (Admin'den gelen)
+  const [customCars, setCustomCars] = useState([]);
+  const [chiptuningPackages, setChiptuningPackages] = useState([]);
+  const [combinedDb, setCombinedDb] = useState({});
 
   // Dinamik servis listesi (backend'den çekilir, Admin panelinden yönetilir)
   const [servicesList, setServicesList] = useState([]);
@@ -317,15 +330,21 @@ function Appointment() {
           if (s.category === 'general') general[s.key] = s.value;
         });
 
-        // Yağ tiplerini chiptuningData'dan çek
+        // Chiptuning verilerini çek
         try {
           if (general.chiptuningData) {
             const chipData = JSON.parse(general.chiptuningData);
             if (Array.isArray(chipData.oilTypes) && chipData.oilTypes.length > 0) {
               setOilTypes(chipData.oilTypes);
             }
+            if (Array.isArray(chipData.packages) && chipData.packages.length > 0) {
+              setChiptuningPackages(chipData.packages);
+            }
+            if (Array.isArray(chipData.customCars)) {
+              setCustomCars(chipData.customCars);
+            }
           }
-        } catch(e) {
+        } catch (e) {
           console.error('chiptuningData parse error:', e);
         }
 
@@ -355,7 +374,7 @@ function Appointment() {
               }
             }
           }
-        } catch(e) {
+        } catch (e) {
           console.error('servicesList parse error:', e);
         }
       } catch (err) {
@@ -567,10 +586,39 @@ function Appointment() {
     },
   };
 
+  // carDatabase + customCars birleştirme
+  useEffect(() => {
+    const newDb = JSON.parse(JSON.stringify(carDatabase)); // Deep copy
+    customCars.forEach(cc => {
+      if (!newDb[cc.brand]) {
+        newDb[cc.brand] = { models: [], engines: {}, packages: ['Standart'] };
+      }
+      if (!newDb[cc.brand].models.includes(cc.model)) {
+        newDb[cc.brand].models.push(cc.model);
+      }
+      if (!newDb[cc.brand].engines[cc.model]) {
+        newDb[cc.brand].engines[cc.model] = [];
+      }
+      const engineStr = `${cc.engine} ${cc.hp} HP`;
+      if (!newDb[cc.brand].engines[cc.model].includes(engineStr)) {
+        newDb[cc.brand].engines[cc.model].push(engineStr);
+      }
+      newDb[cc.brand].models.sort();
+      newDb[cc.brand].engines[cc.model].sort();
+    });
+    setCombinedDb(newDb);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customCars]);
+
   // Servis isimleri: backend'den geldiyse dinamik, gelmediyse varsayılan
-  const services = servicesList.length > 0
+  let services = servicesList.length > 0
     ? servicesList.map(s => s.title).filter(Boolean)
     : ['Periyodik Bakım', 'Motor Bakımı', 'Fren Bakımı', 'Lastik Değişimi', 'Klima Bakımı', 'Elektrik Sistemleri', 'Kaporta & Boya', 'Mekanik Onarım'];
+
+  // Chiptuning hizmeti yoksa listeye manuel eklenebilir, genelde hizmetlere admin'den eklenmesi istenir ama opsiyonel 
+  if (!services.includes('Chiptuning')) {
+    services.unshift('Chiptuning');
+  }
 
   const years = [];
   for (let year = new Date().getFullYear() + 1; year >= 1990; year--) {
@@ -584,10 +632,16 @@ function Appointment() {
 
     try {
       const serviceText = Array.isArray(formData.service) ? formData.service.join(', ') : formData.service;
+      let finalMessage = `${formData.carBrand} ${formData.carModel} (${formData.carYear})`;
+      if (formData.engineType) finalMessage += ` - Motor: ${formData.engineType}`;
+      if (formData.packageType) finalMessage += ` - Donanım: ${formData.packageType}`;
+      if (formData.chiptuningPackage) finalMessage += ` - Chip: ${formData.chiptuningPackage}`;
+      if (formData.message) finalMessage += ` | Not: ${formData.message}`;
+
       const result = await axios.post(`${API}/api/appointments`, {
         ...formData,
         service: serviceText,
-        message: `${formData.carBrand} ${formData.carModel} (${formData.carYear}) - ${formData.engineType} - ${formData.packageType} ${formData.message ? '- ' + formData.message : ''}`,
+        message: finalMessage,
         oilType: formData.oilType || ''
       });
       setSuccess(true);
@@ -626,20 +680,38 @@ function Appointment() {
     }
   };
 
-  const nextStep = () => {
-    if (step === 1 && formData.service.length > 0) { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) { setStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else if (step === 3 && formData.date && formData.time) { setStep(4); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  const scrollToForm = () => {
+    setTimeout(() => {
+      const el = document.getElementById('form-top');
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
-  const prevStep = () => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const nextStep = () => {
+    if (step === 1 && formData.service.length > 0) { setStep(2); scrollToForm(); }
+    else if (step === 2 && formData.carBrand && formData.carModel && formData.carYear) { setStep(3); scrollToForm(); }
+    else if (step === 3 && formData.date && formData.time) { setStep(4); scrollToForm(); }
+  };
 
-  const selectedBrand = formData.carBrand && !manualCar ? carDatabase[formData.carBrand] : null;
+  const prevStep = () => { setStep(step - 1); scrollToForm(); };
+
+  const selectedBrand = formData.carBrand && !manualCar ? combinedDb[formData.carBrand] : null;
   const availableModels = selectedBrand ? selectedBrand.models : [];
-  const availableEngines = selectedBrand && formData.carModel && selectedBrand.engines[formData.carModel] 
-    ? selectedBrand.engines[formData.carModel] 
+  const availableEngines = selectedBrand && formData.carModel && selectedBrand.engines[formData.carModel]
+    ? selectedBrand.engines[formData.carModel]
     : [];
   const availablePackages = selectedBrand ? selectedBrand.packages : [];
+
+  // Eğer admin'den chiptuning listesi geldiyse onu kullan, yoksa varsayılanları (Stage 1, 2, 3).
+  const isChiptuningSelected = formData.service.includes('Chiptuning');
+  const availableChiptuningPackages = chiptuningPackages.length > 0
+    ? chiptuningPackages.map(p => p.name)
+    : ['Stage 1', 'Stage 2', 'Stage 3'];
 
   if (success) {
     return (
@@ -655,11 +727,11 @@ function Appointment() {
               </div>
             </div>
           </div>
-          
+
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight mb-4 sm:mb-6">
             RANDEVUNUZ OLUŞTURULDU
           </h1>
-          
+
           <p className="text-xl font-light text-gray-500 mb-6">
             En kısa zamanda sizinle iletişime geçeceğiz
           </p>
@@ -802,7 +874,7 @@ function Appointment() {
         )}
 
         {/* Progress */}
-        <div className="mb-8 sm:mb-12">
+        <div id="form-top" className="mb-8 sm:mb-12">
           <div className="flex items-center">
             {[
               { num: 1, label: 'HİZMET' },
@@ -812,15 +884,13 @@ function Appointment() {
             ].map((item, idx) => (
               <div key={item.num} className={`flex flex-col items-center ${idx < 3 ? 'flex-1' : ''}`}>
                 <div className="flex items-center w-full">
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 text-sm sm:text-base flex-shrink-0 ${
-                    step >= item.num ? 'border-white bg-white text-black' : 'border-dark-800 text-gray-700'
-                  }`}>
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 text-sm sm:text-base flex-shrink-0 ${step >= item.num ? 'border-white bg-white text-black' : 'border-dark-800 text-gray-700'
+                    }`}>
                     {item.num}
                   </div>
                   {idx < 3 && (
-                    <div className={`flex-1 h-[1px] mx-2 sm:mx-4 transition-all duration-500 ${
-                      step > item.num ? 'bg-white' : 'bg-gray-800'
-                    }`}></div>
+                    <div className={`flex-1 h-[1px] mx-2 sm:mx-4 transition-all duration-500 ${step > item.num ? 'bg-white' : 'bg-gray-800'
+                      }`}></div>
                   )}
                 </div>
                 <span className={`text-[10px] sm:text-xs tracking-wider font-light mt-2 sm:mt-3 ${step >= item.num ? 'text-white' : 'text-gray-500'}`}>{item.label}</span>
@@ -845,11 +915,10 @@ function Appointment() {
                   return (
                     <label
                       key={service}
-                      className={`group relative p-6 border cursor-pointer transition-all duration-300 ${
-                        isSelected
-                          ? 'border-white bg-white/5'
-                          : 'border-dark-900 hover:border-gray-600'
-                      }`}
+                      className={`group relative p-6 border cursor-pointer transition-all duration-300 ${isSelected
+                        ? 'border-white bg-white/5'
+                        : 'border-dark-900 hover:border-gray-600'
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -868,9 +937,8 @@ function Appointment() {
                       />
                       <div className="flex items-center justify-between">
                         <span className="font-light">{service}</span>
-                        <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${
-                          isSelected ? 'border-white bg-white' : 'border-dark-800'
-                        }`}>
+                        <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${isSelected ? 'border-white bg-white' : 'border-dark-800'
+                          }`}>
                           {isSelected && (
                             <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -925,11 +993,10 @@ function Appointment() {
                 type="button"
                 onClick={nextStep}
                 disabled={formData.service.length === 0}
-                className={`w-full py-4 border font-light tracking-widest text-sm transition-all duration-300 ${
-                  formData.service.length > 0
-                    ? 'border-white hover:bg-white hover:text-black cursor-pointer'
-                    : 'border-dark-900 text-gray-700 cursor-not-allowed'
-                }`}
+                className={`w-full py-4 border font-light tracking-widest text-sm transition-all duration-300 ${formData.service.length > 0
+                  ? 'border-white hover:bg-white hover:text-black cursor-pointer'
+                  : 'border-dark-900 text-gray-700 cursor-not-allowed'
+                  }`}
               >
                 DEVAM ET
               </button>
@@ -940,7 +1007,7 @@ function Appointment() {
           {step === 2 && (
             <div className="space-y-6 animate-fade-in">
               <h2 className="text-2xl font-light tracking-wider mb-8">Araç Bilgileri</h2>
-              
+
               {/* Manual Entry Checkbox */}
               <label className="flex items-center space-x-3 cursor-pointer group">
                 <input
@@ -979,7 +1046,7 @@ function Appointment() {
                       required
                     >
                       <option value="">Seçiniz</option>
-                      {Object.keys(carDatabase).sort().map(brand => (
+                      {Object.keys(combinedDb).sort().map(brand => (
                         <option key={brand} value={brand}>{brand}</option>
                       ))}
                     </select>
@@ -1041,10 +1108,10 @@ function Appointment() {
                     </div>
                   )}
 
-                  {/* Package Dropdown */}
+                  {/* Trim Package Dropdown */}
                   {formData.carYear && availablePackages.length > 0 && (
                     <div>
-                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">PAKET</label>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">DONANIM PAKETİ</label>
                       <select
                         name="packageType"
                         value={formData.packageType}
@@ -1053,6 +1120,25 @@ function Appointment() {
                       >
                         <option value="">Seçiniz (Opsiyonel)</option>
                         {availablePackages.map(pkg => (
+                          <option key={pkg} value={pkg}>{pkg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Chiptuning Package Dropdown */}
+                  {formData.carYear && isChiptuningSelected && availableChiptuningPackages.length > 0 && (
+                    <div>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">CHİPTUNİNG PAKETİ</label>
+                      <select
+                        name="chiptuningPackage"
+                        value={formData.chiptuningPackage}
+                        onChange={handleChange}
+                        className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
+                        required
+                      >
+                        <option value="">Seçiniz</option>
+                        {availableChiptuningPackages.map(pkg => (
                           <option key={pkg} value={pkg}>{pkg}</option>
                         ))}
                       </select>
@@ -1118,18 +1204,37 @@ function Appointment() {
                     />
                   </div>
 
-                  {/* Manual Package Input */}
+                  {/* Manual Trim Package Input */}
                   <div>
-                    <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">PAKET (Opsiyonel)</label>
+                    <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">DONANIM PAKETİ (Opsiyonel)</label>
                     <input
                       type="text"
                       name="packageType"
                       value={formData.packageType}
                       onChange={handleChange}
-                      placeholder="Örn: Full Self-Driving"
+                      placeholder="Örn: M Sport"
                       className="w-full bg-transparent border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
                     />
                   </div>
+
+                  {/* Manual Chiptuning Package Selection */}
+                  {isChiptuningSelected && (
+                    <div>
+                      <label className="block text-xs tracking-widest font-light text-gray-500 mb-3">CHİPTUNİNG PAKETİ</label>
+                      <select
+                        name="chiptuningPackage"
+                        value={formData.chiptuningPackage}
+                        onChange={handleChange}
+                        className="w-full bg-black border border-dark-900 px-6 py-4 focus:border-white focus:outline-none transition-colors font-light"
+                        required
+                      >
+                        <option value="">Seçiniz</option>
+                        {availableChiptuningPackages.map(pkg => (
+                          <option key={pkg} value={pkg}>{pkg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1145,11 +1250,10 @@ function Appointment() {
                   type="button"
                   onClick={nextStep}
                   disabled={!formData.carBrand || !formData.carModel || !formData.carYear}
-                  className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${
-                    formData.carBrand && formData.carModel && formData.carYear
-                      ? 'border-white hover:bg-white hover:text-black'
-                      : 'border-dark-900 text-gray-700 cursor-not-allowed'
-                  }`}
+                  className={`flex-1 py-4 border font-light tracking-widest text-sm transition-all ${formData.carBrand && formData.carModel && formData.carYear
+                    ? 'border-white hover:bg-white hover:text-black'
+                    : 'border-dark-900 text-gray-700 cursor-not-allowed'
+                    }`}
                 >
                   DEVAM ET
                 </button>
@@ -1176,42 +1280,48 @@ function Appointment() {
               {/* Summary Box */}
               <div className="border border-dark-900 p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
                 <div className="border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm block mb-2">Hizmetler ({formData.service.length})</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base block mb-3">Hizmetler ({formData.service.length})</span>
                   <div className="flex flex-wrap gap-2">
                     {formData.service.map((s, i) => (
-                      <span key={i} className="px-2 sm:px-3 py-1 border border-dark-800 text-xs sm:text-sm font-light">{s}</span>
+                      <span key={i} className="px-3 sm:px-4 py-1.5 border border-dark-700 bg-dark-900 text-sm sm:text-base font-medium text-white shadow-sm">{s}</span>
                     ))}
                   </div>
                 </div>
                 <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Araç</span>
-                  <span className="font-light text-sm text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Araç</span>
+                  <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.carBrand} {formData.carModel} ({formData.carYear})</span>
                 </div>
                 {formData.engineType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Motor</span>
-                    <span className="font-light text-sm text-right ml-4">{formData.engineType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Motor</span>
+                    <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.engineType}</span>
                   </div>
                 )}
                 {formData.packageType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Paket</span>
-                    <span className="font-light text-sm text-right ml-4">{formData.packageType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Donanım Paketi</span>
+                    <span className="font-medium text-base sm:text-lg text-white text-right ml-4">{formData.packageType}</span>
+                  </div>
+                )}
+                {formData.chiptuningPackage && (
+                  <div className="flex justify-between items-start border-b border-dark-900 pb-4">
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Chiptuning Paketi</span>
+                    <span className="font-medium text-base sm:text-lg text-orange-400 text-right ml-4">{formData.chiptuningPackage}</span>
                   </div>
                 )}
                 {formData.oilType && (
                   <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                    <span className="text-gray-500 font-light text-sm flex-shrink-0">Yağ Tipi</span>
-                    <span className="font-light text-sm text-right ml-4 text-red-400">{formData.oilType}</span>
+                    <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Yağ Tipi</span>
+                    <span className="font-medium text-base sm:text-lg text-red-500 text-right ml-4">{formData.oilType}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start border-b border-dark-900 pb-4">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Tarih</span>
-                  <span className="font-light text-sm">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Tarih</span>
+                  <span className="font-medium text-base sm:text-lg text-white">{new Date(formData.date).toLocaleDateString('tr-TR')}</span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500 font-light text-sm flex-shrink-0">Saat</span>
-                  <span className="font-light text-sm">{formData.time}</span>
+                  <span className="text-gray-400 font-normal text-sm sm:text-base flex-shrink-0">Saat</span>
+                  <span className="font-medium text-base sm:text-lg text-white">{formData.time}</span>
                 </div>
               </div>
 

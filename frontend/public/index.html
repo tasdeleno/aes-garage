@@ -31,8 +31,8 @@
     <meta name="twitter:title" content="AES Garage - Premium Araç Bakım & Servis" />
     <meta name="twitter:description" content="İstanbul Ataşehir'de profesyonel araç bakım ve servis hizmetleri." />
 
-    <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://*.googleapis.com https://*.gstatic.com https://aesgarage.com https://res.cloudinary.com; connect-src 'self' https://aesgarage.com https://maps.google.com; frame-src https://maps.google.com https://www.google.com;" />
+    <!-- Content Security Policy (development only - production uses server HTTP headers) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://*.googleapis.com https://*.gstatic.com https://aesgarage.com https://res.cloudinary.com; connect-src 'self' https://aesgarage.com; frame-src https://maps.google.com https://www.google.com;" />
 
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
