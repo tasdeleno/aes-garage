@@ -228,15 +228,15 @@ function App() {
 
         <div
           className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-center"
-          onMouseEnter={() => setIsContactMenuOpen(true)}
-          onMouseLeave={() => setIsContactMenuOpen(false)}
+          onMouseEnter={() => { if (window.innerWidth < 768) setIsContactMenuOpen(true); }}
+          onMouseLeave={() => { if (window.innerWidth < 768) setIsContactMenuOpen(false); }}
         >
-          {/* Telefon Butonu */}
+          {/* Telefon Butonu - Sadece Mobilde Görünür */}
           <a
             href={`tel:${contactInfo.phone.replace(/\s+/g, '')}`}
-            className={`mb-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 ease-in-out transform hover:scale-110 ${isContactMenuOpen
-                ? 'opacity-100 translate-y-0 scale-100'
-                : 'opacity-0 translate-y-12 scale-0 pointer-events-none'
+            className={`mb-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex md:hidden items-center justify-center shadow-2xl transition-all duration-700 ease-in-out transform hover:scale-110 ${isContactMenuOpen
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 translate-y-12 scale-0 pointer-events-none'
               }`}
             style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}
             aria-label="Telefonla ara"
