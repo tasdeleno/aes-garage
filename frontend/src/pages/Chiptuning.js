@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { getSettings } from '../utils/settingsCache';
 import SEOHead from '../components/SEOHead';
 import carDatabase from '../data/carDatabase';
 
@@ -196,9 +196,9 @@ function Chiptuning() {
   useEffect(() => {
     const fetchChipData = async () => {
       try {
-        const res = await axios.get(`${API}/api/settings`);
+        const data = await getSettings(API);
         const general = {};
-        res.data.forEach(s => {
+        data.forEach(s => {
           if (s.category === 'general') general[s.key] = s.value;
         });
         if (general.chiptuningData) {

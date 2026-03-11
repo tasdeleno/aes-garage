@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import Home from './pages/Home';
-import Services from './pages/Services';
-import Pricing from './pages/Pricing';
-import Appointment from './pages/Appointment';
-import Chiptuning from './pages/Chiptuning';
-import Contact from './pages/Contact';
-import Admin from './pages/Admin';
-import About from './pages/About';
-import KVKK from './pages/KVKK';
-import TrackAppointment from './pages/TrackAppointment';
-import NotFound from './pages/NotFound';
-import LoadingScreen from './components/LoadingScreen';
+import { getSettings } from './utils/settingsCache';
+
+const Home = lazy(() => import('./pages/Home'));
+const Services = lazy(() => import('./pages/Services'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Appointment = lazy(() => import('./pages/Appointment'));
+const Chiptuning = lazy(() => import('./pages/Chiptuning'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Admin = lazy(() => import('./pages/Admin'));
+const About = lazy(() => import('./pages/About'));
+const KVKK = lazy(() => import('./pages/KVKK'));
+const TrackAppointment = lazy(() => import('./pages/TrackAppointment'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const LoadingScreen = lazy(() => import('./components/LoadingScreen'));
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -176,9 +177,9 @@ function App() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await axios.get(`${API}/api/settings`);
+        const data = await getSettings(API);
         const contact = {};
-        response.data.forEach(setting => {
+        data.forEach(setting => {
           if (setting.key === 'logo' && setting.category === 'images') {
             setLogo(setting.value);
           }
@@ -203,12 +204,17 @@ function App() {
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      {initialLoad && <LoadingScreen onComplete={handleLoadingComplete} />}
+      {initialLoad && (
+        <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black" />}>
+          <LoadingScreen onComplete={handleLoadingComplete} />
+        </Suspense>
+      )}
       <div className="min-h-screen bg-black text-white">
         <ScrollToTop />
         <Navigation logo={logo} />
 
         <main>
+          <Suspense fallback={<div className="min-h-screen bg-black" />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/hakkimizda" element={<About />} />
@@ -222,6 +228,7 @@ function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </main>
 
         <ScrollToTopButton />

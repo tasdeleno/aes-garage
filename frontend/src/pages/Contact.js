@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { getSettings } from '../utils/settingsCache';
 import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
@@ -25,9 +26,9 @@ function Contact() {
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
-        const response = await axios.get(`${API}/api/settings`);
+        const data = await getSettings(API);
         const contact = {};
-        response.data.forEach(s => {
+        data.forEach(s => {
           if (s.category === 'contact') contact[s.key] = s.value;
         });
         if (Object.keys(contact).length > 0) {
