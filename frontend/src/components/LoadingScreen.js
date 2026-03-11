@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './LoadingScreen.css';
 import carImage from '../assets/car-topdown.png';
 
@@ -12,7 +12,7 @@ export default function LoadingScreen({ onComplete }) {
         const spawnInterval = setInterval(() => {
             setParticles(prev => {
                 // Keep enough particles for dense dual smoke
-                const current = prev.length > 60 ? prev.slice(prev.length - 60) : prev;
+                const current = prev.length > 30 ? prev.slice(prev.length - 30) : prev;
 
                 // Base distance backward and laterally
                 const backwardForce = Math.random() * 100 + 50;  // Shoots backward (left)
@@ -39,7 +39,7 @@ export default function LoadingScreen({ onComplete }) {
                 };
                 return [...current, p1, p2];
             });
-        }, 50); // Spawn every 50ms (dense smoke)
+        }, 100); // Spawn every 100ms (optimized smoke)
 
         const timer = setTimeout(() => {
             completeLoading();

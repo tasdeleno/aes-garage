@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { getSettings } from '../utils/settingsCache';
 import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
@@ -271,12 +271,12 @@ function Home() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await axios.get(`${API}/api/settings`);
+        const data = await getSettings(API);
         const imageSettings = {};
         const homeContent = {};
         const general = {};
 
-        response.data.forEach(setting => {
+        data.forEach(setting => {
           if (setting.category === 'images') {
             imageSettings[setting.key] = setting.value;
           } else if (setting.category === 'homeContent') {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { getSettings } from '../utils/settingsCache';
 import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
@@ -324,9 +325,9 @@ function Appointment() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await axios.get(`${API}/api/settings`);
+        const data = await getSettings(API);
         const general = {};
-        response.data.forEach(s => {
+        data.forEach(s => {
           if (s.category === 'general') general[s.key] = s.value;
         });
 
