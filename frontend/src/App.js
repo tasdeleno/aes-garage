@@ -217,7 +217,7 @@ function App() {
 
         <ScrollToTopButton />
 
-        <a href={`https://wa.me/${contactInfo.whatsapp}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50 group whatsapp-btn">
+        <a href={`https://wa.me/${contactInfo.whatsapp.replace(/[\s\-\+\(\)]/g, '')}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50 group whatsapp-btn">
           <div className="relative">
             <div className="absolute inset-0 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" style={{background: '#25D366'}}></div>
             <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-300" style={{background: 'linear-gradient(135deg, #25D366, #128C7E)'}}>
