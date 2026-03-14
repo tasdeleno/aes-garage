@@ -9,7 +9,11 @@ const API = process.env.REACT_APP_API_URL || '';
 const mockPricing = {
     basePrice: 500, // TL
     vehicleMultipliers: { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 },
-    damageMultipliers: { 'Küçük': 1, 'Orta': 1.5, 'Büyük': 2, 'Çok Büyük': 2.5 }
+    damageCategories: [
+        { label: 'Küçük', multiplier: 1, image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=300', priceMin: 500, priceMax: 800, description: 'Bozuk para büyüklüğünde ufak göçükler' },
+        { label: 'Orta', multiplier: 1.5, image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=300', priceMin: 800, priceMax: 1500, description: 'Yumruk büyüklüğünde orta çaplı hasarlar' },
+        { label: 'Büyük', multiplier: 2, image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=300', priceMin: 1500, priceMax: 3000, description: 'Futbol topu boyutunda veya daha geniş göçükler' }
+    ]
 };
 
 const mockGallery = [
@@ -39,6 +43,7 @@ function DamageRepair() {
     const [vehicleType, setVehicleType] = useState('');
     const [damageSize, setDamageSize] = useState('');
     const [calculatedPrice, setCalculatedPrice] = useState(null);
+    const [priceRange, setPriceRange] = useState(null);
 
     useEffect(() => {
         // API entegrasyonu denenecek, olmazsa mock veri kullanılacak.
@@ -59,7 +64,10 @@ function DamageRepair() {
                 if (finalPricing.vehicleMultipliers) {
                     setVehicleType(Object.keys(finalPricing.vehicleMultipliers)[0]);
                 }
-                if (finalPricing.damageMultipliers) {
+                if (finalPricing.damageCategories && finalPricing.damageCategories.length > 0) {
+                    setDamageSize(finalPricing.damageCategories[0].label);
+                } else if (finalPricing.damageMultipliers) {
+                    // Fallback to old format if necessary
                     setDamageSize(Object.keys(finalPricing.damageMultipliers)[0]);
                 }
             } catch (error) {
@@ -79,12 +87,14 @@ function DamageRepair() {
     useEffect(() => {
         if (!vehicleType || !damageSize) return;
 
-        // Hesaplama Mantığı (Önce backend)
         const checkPriceFromBackend = async () => {
             try {
                 const res = await axios.post(`${API}/api/damage-pricing/calculate`, { vehicleType, damageSize });
                 if (res.data && res.data.estimatedPrice) {
                     setCalculatedPrice(res.data.estimatedPrice);
+                    if (res.data.priceRange) {
+                        setPriceRange(res.data.priceRange);
+                    }
                     return;
                 }
             } catch (err) {
@@ -93,9 +103,20 @@ function DamageRepair() {
 
             // Eğer backend'den alınamazsa (veya hata verirse) lokal devam et
             if (pricingParams) {
-                const base = pricingParams.basePrice || 1500;
+                const base = pricingParams.basePrice || 500;
                 const vMult = pricingParams.vehicleMultipliers?.[vehicleType] || 1;
-                const dMult = pricingParams.damageMultipliers?.[damageSize] || 1;
+                let dMult = 1;
+
+                if (pricingParams.damageCategories && pricingParams.damageCategories.length > 0) {
+                    const cat = pricingParams.damageCategories.find(c => c.label === damageSize);
+                    if (cat) {
+                        dMult = cat.multiplier;
+                        setPriceRange({ min: Math.round(cat.priceMin * vMult), max: Math.round(cat.priceMax * vMult) });
+                    }
+                } else if (pricingParams.damageMultipliers) {
+                    dMult = pricingParams.damageMultipliers[damageSize] || 1;
+                    setPriceRange(null);
+                }
 
                 const result = base * vMult * dMult;
                 setCalculatedPrice(Math.round(result));
@@ -106,7 +127,9 @@ function DamageRepair() {
     }, [vehicleType, damageSize, pricingParams]);
 
     const availableVehicleTypes = pricingParams && pricingParams.vehicleMultipliers ? Object.keys(pricingParams.vehicleMultipliers) : Object.keys(mockPricing.vehicleMultipliers);
-    const availableDamageSizes = pricingParams && pricingParams.damageMultipliers ? Object.keys(pricingParams.damageMultipliers) : Object.keys(mockPricing.damageMultipliers);
+    const availableDamageCategories = pricingParams && pricingParams.damageCategories && pricingParams.damageCategories.length > 0
+        ? pricingParams.damageCategories
+        : mockPricing.damageCategories;
 
 
     const repairSchema = {
@@ -205,23 +228,35 @@ function DamageRepair() {
                                                     </button>
                                                 ))}
                                             </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-[10px] sm:text-xs tracking-[0.2em] font-light text-gray-400 mb-3">HASAR BOYUTU (Çap)</label>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                {availableDamageSizes.map(size => (
-                                                    <button
-                                                        key={size}
-                                                        onClick={() => setDamageSize(size)}
-                                                        className={`py-3 border text-xs sm:text-sm font-light transition-all duration-300 ${damageSize === size
-                                                            ? 'border-red-500 bg-red-600/10 text-white'
-                                                            : 'border-dark-700 hover:border-dark-500 text-gray-400'
-                                                            }`}
-                                                    >
-                                                        {size}
-                                                    </button>
-                                                ))}
+                                            <div className="pt-2 border-t border-dark-800 mt-6">
+                                                <label className="block text-[10px] sm:text-xs tracking-[0.2em] font-light text-gray-400 mb-3">HASAR KATEGORİSİ</label>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                    {availableDamageCategories.map(cat => (
+                                                        <button
+                                                            key={cat.label}
+                                                            onClick={() => setDamageSize(cat.label)}
+                                                            className={`text-left group overflow-hidden border transition-all duration-300 ${damageSize === cat.label
+                                                                ? 'border-red-500 bg-red-600/10'
+                                                                : 'border-dark-700 bg-dark-900/50 hover:border-dark-500'
+                                                                }`}
+                                                        >
+                                                            {cat.image && (
+                                                                <div className="h-24 w-full overflow-hidden border-b border-dark-700/50 relative">
+                                                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
+                                                                    <img src={cat.image} alt={cat.label} className="w-full h-full object-cover transform scale-100 group-hover:scale-110 transition-transform duration-700" />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-3">
+                                                                <span className={`block text-xs font-light uppercase tracking-wider mb-1 ${damageSize === cat.label ? 'text-white' : 'text-gray-300'}`}>
+                                                                    {cat.label}
+                                                                </span>
+                                                                <span className="block text-[10px] text-gray-500 font-light line-clamp-2">
+                                                                    {cat.description || 'Bu hasar tipi için açıklama bulunmuyor.'}
+                                                                </span>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -231,14 +266,24 @@ function DamageRepair() {
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-red-900/5 rounded-xl pointer-events-none"></div>
                                         <span className="text-[10px] sm:text-xs tracking-[0.3em] font-light text-gray-500 mb-4">TAHMİNİ TUTAR</span>
 
-                                        <div className="flex items-baseline mb-6 space-x-2">
+                                        <div className="flex flex-col items-center mb-6">
                                             {loading ? (
-                                                <div className="h-16 w-32 bg-dark-800 animate-pulse rounded"></div>
+                                                <div className="h-16 w-32 bg-dark-800 animate-pulse rounded my-2"></div>
                                             ) : (
                                                 <>
-                                                    <span className="text-sm font-light text-gray-400">~</span>
-                                                    <span className="text-5xl sm:text-7xl font-light text-white tracking-tighter">{calculatedPrice}</span>
-                                                    <span className="text-xl sm:text-2xl font-light text-red-500">₺</span>
+                                                    <div className="flex items-baseline space-x-2">
+                                                        <span className="text-sm font-light text-gray-400">~</span>
+                                                        <span className="text-5xl sm:text-7xl font-light text-white tracking-tighter">{calculatedPrice}</span>
+                                                        <span className="text-xl sm:text-2xl font-light text-red-500">₺</span>
+                                                    </div>
+
+                                                    {priceRange && priceRange.min > 0 && (
+                                                        <div className="mt-2 px-3 py-1 bg-dark-900 border border-dark-700 rounded-full">
+                                                            <span className="text-[10px] text-gray-400 font-light tracking-wider uppercase">
+                                                                Tahmini Aralık: {priceRange.min}₺ - {priceRange.max}₺
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -257,7 +302,6 @@ function DamageRepair() {
                                             </svg>
                                         </Link>
                                     </div>
-
                                 </div>
                             </div>
                         </div>

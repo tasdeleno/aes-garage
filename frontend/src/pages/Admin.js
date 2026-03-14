@@ -124,9 +124,9 @@ function Admin() {
   // ─── Hasar Onarım (Göçük Düzeltme) ───
   const [damageGallery, setDamageGallery] = useState([]);
   const [damagePricing, setDamagePricing] = useState({
-    basePrice: 1500,
-    vehicleMultipliers: { sedan: 1, hatchback: 1, suv: 1.2, pickup: 1.3, luks: 1.5 },
-    damageMultipliers: { '1-5': 1, '5-10': 1.5, '10-20': 2.5, '20+': 4 }
+    basePrice: 500,
+    vehicleMultipliers: { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 },
+    damageCategories: []
   });
   const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', beforeImage: '', afterImage: '' });
 
@@ -440,6 +440,37 @@ function Admin() {
       alert('Fiyatlandırma kaydedildi!');
     } catch (err) { alert('Hata oluştu!'); }
     finally { setSaving(false); }
+  };
+
+  const handleCategoryUpload = async (idx, file) => {
+    if (!file) return;
+    setUploadingImage(`category-${idx}`);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await axios.post(`${API}/api/damage-pricing/upload-image`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const url = res.data.imageUrl;
+
+      const copy = [...(damagePricing.damageCategories || [])];
+      copy[idx] = { ...copy[idx], image: url };
+      setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+    } catch (err) { alert('Hata oluştu!'); }
+    finally { setUploadingImage(null); }
+  };
+
+  const addDamageCategory = () => {
+    setDamagePricing(prev => ({
+      ...prev,
+      damageCategories: [...(prev.damageCategories || []), { label: '', multiplier: 1, image: '', priceMin: 0, priceMax: 0, description: '' }]
+    }));
+  };
+  const removeDamageCategory = (idx) => {
+    setDamagePricing(prev => ({
+      ...prev,
+      damageCategories: (prev.damageCategories || []).filter((_, i) => i !== idx)
+    }));
   };
 
 
@@ -1224,16 +1255,16 @@ function Admin() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+              <div className="pt-4">
                 {/* Araç Çarpanları */}
-                <div>
+                <div className="mb-8">
                   <h4 className="text-sm tracking-wider text-gray-300 border-b border-dark-700 pb-2 mb-4">Araç Çarpanları</h4>
-                  <div className="space-y-3">
-                    {Object.keys(damagePricing.vehicleMultipliers).map(v => (
-                      <div key={v} className="flex justify-between items-center gap-4">
-                        <span className="text-xs text-gray-400 uppercase tracking-widest w-24">{v}</span>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {Object.keys(damagePricing.vehicleMultipliers || {}).map(v => (
+                      <div key={v} className="bg-dark-900 border border-dark-700 p-4 rounded text-center">
+                        <span className="text-xs text-gray-400 uppercase tracking-widest block mb-2">{v}</span>
                         <input
-                          type="number" step="0.1" className={inputClass}
+                          type="number" step="0.1" className={inputClass + ' text-center'}
                           value={damagePricing.vehicleMultipliers[v]}
                           onChange={e => setDamagePricing({ ...damagePricing, vehicleMultipliers: { ...damagePricing.vehicleMultipliers, [v]: Number(e.target.value) } })}
                         />
@@ -1242,20 +1273,91 @@ function Admin() {
                   </div>
                 </div>
 
-                {/* Hasar Çarpanları */}
+                {/* Hasar Kategorileri (Yeni Yapı) */}
                 <div>
-                  <h4 className="text-sm tracking-wider text-gray-300 border-b border-dark-700 pb-2 mb-4">Hasar Çarpanları</h4>
-                  <div className="space-y-3">
-                    {Object.keys(damagePricing.damageMultipliers).map(d => (
-                      <div key={d} className="flex justify-between items-center gap-4">
-                        <span className="text-xs text-gray-400 uppercase tracking-widest w-24">{d} cm</span>
-                        <input
-                          type="number" step="0.1" className={inputClass}
-                          value={damagePricing.damageMultipliers[d]}
-                          onChange={e => setDamagePricing({ ...damagePricing, damageMultipliers: { ...damagePricing.damageMultipliers, [d]: Number(e.target.value) } })}
-                        />
+                  <div className="flex justify-between items-center border-b border-dark-700 pb-2 mb-4">
+                    <h4 className="text-sm tracking-wider text-gray-300">Hasar Boyutu Kategorileri & Resimler</h4>
+                    <button onClick={addDamageCategory} className={btnOutline + ' py-1 px-3 text-xs'}>+ YENİ KATEGORİ EKLE</button>
+                  </div>
+
+                  <div className="space-y-6 mt-4">
+                    {(damagePricing.damageCategories || []).map((cat, idx) => (
+                      <div key={idx} className="border border-dark-700 bg-dark-900 p-5 rounded space-y-4 relative">
+                        <button onClick={() => removeDamageCategory(idx)} className="absolute top-2 right-2 px-2 py-1 bg-red-600/20 text-red-500 text-xs hover:bg-red-600 hover:text-white transition-colors">SİL</button>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">KATEGORİ ADI (örn: Küçük)</label>
+                            <input
+                              className={inputClass}
+                              value={cat.label || ''}
+                              onChange={e => {
+                                const copy = [...damagePricing.damageCategories];
+                                copy[idx].label = e.target.value;
+                                setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">ÇARPAN (örn: 1.5)</label>
+                            <input
+                              type="number" step="0.1" className={inputClass}
+                              value={cat.multiplier === undefined ? '' : cat.multiplier}
+                              onChange={e => {
+                                const copy = [...damagePricing.damageCategories];
+                                copy[idx].multiplier = Number(e.target.value);
+                                setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">MİN. FİYAT (Aralık için, isteğe bağlı)</label>
+                            <input
+                              type="number" className={inputClass}
+                              value={cat.priceMin === undefined ? '' : cat.priceMin}
+                              onChange={e => {
+                                const copy = [...damagePricing.damageCategories];
+                                copy[idx].priceMin = Number(e.target.value);
+                                setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">MAX. FİYAT (Aralık için, isteğe bağlı)</label>
+                            <input
+                              type="number" className={inputClass}
+                              value={cat.priceMax === undefined ? '' : cat.priceMax}
+                              onChange={e => {
+                                const copy = [...damagePricing.damageCategories];
+                                copy[idx].priceMax = Number(e.target.value);
+                                setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+                              }}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">KISA AÇIKLAMA</label>
+                            <textarea
+                              className={textareaClass} rows="2"
+                              value={cat.description || ''}
+                              onChange={e => {
+                                const copy = [...damagePricing.damageCategories];
+                                copy[idx].description = e.target.value;
+                                setDamagePricing(prev => ({ ...prev, damageCategories: copy }));
+                              }}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[10px] tracking-widest text-gray-500 mb-1">ÖRNEK GÖRSEL</label>
+                            {cat.image && <img src={cat.image} className="h-32 object-cover border border-dark-700 mb-2 rounded" alt="Ornek" />}
+                            <input type="file" accept="image/*" onChange={(e) => handleCategoryUpload(idx, e.target.files[0])} disabled={uploadingImage === `category-${idx}`} className={fileInputClass} />
+                            {uploadingImage === `category-${idx}` && <div className="mt-1 text-xs text-gray-400">Yükleniyor...</div>}
+                          </div>
+                        </div>
                       </div>
                     ))}
+                    {(damagePricing.damageCategories || []).length === 0 && (
+                      <p className="text-sm text-gray-500 font-light text-center py-4">Henüz kategori eklenmemiş. Örnek hasar resimleri eklemek için "Yeni Kategori Ekle" butonunu kullanın.</p>
+                    )}
                   </div>
                 </div>
               </div>
