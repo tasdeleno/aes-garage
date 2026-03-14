@@ -257,18 +257,13 @@ const GallerySchema = new mongoose.Schema({
 const Gallery = mongoose.model('Gallery', GallerySchema);
 
 // ============ PRICING SCHEMA (Boyasız Hasar Onarım - Fiyat Hesaplama Parametreleri) ============
+const DEFAULT_VEHICLE_MULTIPLIERS = { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 };
+const DEFAULT_DAMAGE_MULTIPLIERS = { 'Küçük': 1, 'Orta': 1.5, 'Büyük': 2, 'Çok Büyük': 2.5 };
+
 const PricingSchema = new mongoose.Schema({
   basePrice: { type: Number, required: true, default: 500 },
-  vehicleMultipliers: {
-    type: Map,
-    of: Number,
-    default: { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 }
-  },
-  damageMultipliers: {
-    type: Map,
-    of: Number,
-    default: { Küçük: 1, Orta: 1.5, Büyük: 2, 'Çok Büyük': 2.5 }
-  },
+  vehicleMultipliers: { type: mongoose.Schema.Types.Mixed, default: () => ({ ...DEFAULT_VEHICLE_MULTIPLIERS }) },
+  damageMultipliers: { type: mongoose.Schema.Types.Mixed, default: () => ({ ...DEFAULT_DAMAGE_MULTIPLIERS }) },
   updatedAt: { type: Date, default: Date.now }
 });
 
@@ -918,23 +913,27 @@ app.get('/api/damage-pricing', async (req, res) => {
 app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
   try {
     const { basePrice, vehicleMultipliers, damageMultipliers } = req.body;
-    const update = { updatedAt: Date.now() };
 
-    if (basePrice !== undefined) {
-      if (typeof basePrice !== 'number' || basePrice < 0) {
-        return res.status(400).json({ message: 'Geçersiz taban fiyat' });
-      }
-      update.basePrice = basePrice;
+    if (basePrice !== undefined && (typeof basePrice !== 'number' || basePrice < 0)) {
+      return res.status(400).json({ message: 'Geçersiz taban fiyat' });
     }
-    if (vehicleMultipliers !== undefined) update.vehicleMultipliers = vehicleMultipliers;
-    if (damageMultipliers !== undefined) update.damageMultipliers = damageMultipliers;
 
-    const pricing = await Pricing.findOneAndUpdate(
-      {},
-      update,
-      { upsert: true, new: true }
-    );
+    // Mixed tiplerde findOneAndUpdate sorun çıkarabilir, bu yüzden find + save kullanıyoruz
+    let pricing = await Pricing.findOne();
+    if (!pricing) pricing = new Pricing({});
 
+    if (basePrice !== undefined) pricing.basePrice = basePrice;
+    if (vehicleMultipliers !== undefined) {
+      pricing.vehicleMultipliers = vehicleMultipliers;
+      pricing.markModified('vehicleMultipliers');
+    }
+    if (damageMultipliers !== undefined) {
+      pricing.damageMultipliers = damageMultipliers;
+      pricing.markModified('damageMultipliers');
+    }
+    pricing.updatedAt = Date.now();
+
+    await pricing.save();
     res.json(pricing);
   } catch (error) {
     res.status(400).json({ message: error.message });
