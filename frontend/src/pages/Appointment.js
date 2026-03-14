@@ -275,6 +275,9 @@ function Appointment() {
   const initialModel = queryParams.get('model');
   const initialEngine = queryParams.get('engine');
   const initialChipPackage = queryParams.get('chipPackage');
+  const initialDamageVehicleType = queryParams.get('vehicleType');
+  const initialDamageSize = queryParams.get('damageSize');
+  const initialEstimatedPrice = queryParams.get('estimatedPrice');
 
   const [step, setStep] = useState(1);
   const [manualCar, setManualCar] = useState(false);
@@ -289,6 +292,9 @@ function Appointment() {
     engineType: initialEngine || '',
     packageType: '', // Donanım paketi
     chiptuningPackage: initialChipPackage || '', // Chiptuning için paket
+    damageVehicleType: initialDamageVehicleType || '',
+    damageSize: initialDamageSize || '',
+    estimatedPrice: initialEstimatedPrice || '',
     date: '',
     time: '',
     message: '',
@@ -639,12 +645,20 @@ function Appointment() {
       if (formData.chiptuningPackage) finalMessage += ` - Chip: ${formData.chiptuningPackage}`;
       if (formData.message) finalMessage += ` | Not: ${formData.message}`;
 
-      const result = await axios.post(`${API}/api/appointments`, {
+      const payload = {
         ...formData,
         service: serviceText,
         message: finalMessage,
         oilType: formData.oilType || ''
-      });
+      };
+
+      if (Array.isArray(formData.service) && formData.service.some(s => s.toLowerCase().includes('boyasız hasar onarım') || s.toLowerCase().includes('göçük'))) {
+        if (formData.damageVehicleType) payload.vehicleType = formData.damageVehicleType;
+        if (formData.damageSize) payload.damageSize = formData.damageSize;
+        if (formData.estimatedPrice) payload.estimatedPrice = formData.estimatedPrice;
+      }
+
+      const result = await axios.post(`${API}/api/appointments`, payload);
       setSuccess(true);
       // Takip kodu varsa göster
       if (result.data && result.data.trackingCode) {
@@ -821,7 +835,10 @@ function Appointment() {
                 date: '',
                 time: '',
                 message: '',
-                oilType: ''
+                oilType: '',
+                damageVehicleType: '',
+                damageSize: '',
+                estimatedPrice: ''
               });
               setStep(1);
               setManualCar(false);

@@ -72,16 +72,34 @@ function DamageRepair() {
     }, []);
 
     useEffect(() => {
-        // Hesaplama Mantığı
-        if (pricingParams) {
-            const base = pricingParams.basePrice || 1500;
-            const vMult = pricingParams.vehicleMultipliers?.[vehicleType] || 1;
-            const dMult = pricingParams.damageMultipliers?.[damageSize] || 1;
+        // Hesaplama Mantığı (Önce backend)
+        const checkPriceFromBackend = async () => {
+            try {
+                const res = await axios.post(`${API}/api/damage-pricing/calculate`, { vehicleType, damageSize });
+                if (res.data && res.data.estimatedPrice) {
+                    setCalculatedPrice(res.data.estimatedPrice);
+                    return;
+                }
+            } catch (err) {
+                console.error("Fiyat hesaplama htası (lokal hesaplama kullanılacak):", err);
+            }
 
-            const result = base * vMult * dMult;
-            setCalculatedPrice(Math.round(result));
-        }
+            // Eğer backend'den alınamazsa (veya hata verirse) lokal devam et
+            if (pricingParams) {
+                const base = pricingParams.basePrice || 1500;
+                const vMult = pricingParams.vehicleMultipliers?.[vehicleType] || 1;
+                const dMult = pricingParams.damageMultipliers?.[damageSize] || 1;
+
+                const result = base * vMult * dMult;
+                setCalculatedPrice(Math.round(result));
+            }
+        };
+
+        checkPriceFromBackend();
     }, [vehicleType, damageSize, pricingParams]);
+
+    const availableVehicleTypes = pricingParams && pricingParams.vehicleMultipliers ? Object.keys(pricingParams.vehicleMultipliers) : ['sedan', 'hatchback', 'suv', 'pickup', 'luks'];
+    const availableDamageSizes = pricingParams && pricingParams.damageMultipliers ? Object.keys(pricingParams.damageMultipliers) : ['1-5', '5-10', '10-20', '20+'];
 
 
     const repairSchema = {
@@ -167,7 +185,7 @@ function DamageRepair() {
                                         <div>
                                             <label className="block text-[10px] sm:text-xs tracking-[0.2em] font-light text-gray-400 mb-3">ARAÇ TİPİ</label>
                                             <div className="grid grid-cols-2 gap-3">
-                                                {['sedan', 'hatchback', 'suv', 'pickup', 'luks'].map(type => (
+                                                {availableVehicleTypes.map(type => (
                                                     <button
                                                         key={type}
                                                         onClick={() => setVehicleType(type)}
@@ -185,7 +203,7 @@ function DamageRepair() {
                                         <div>
                                             <label className="block text-[10px] sm:text-xs tracking-[0.2em] font-light text-gray-400 mb-3">HASAR BOYUTU (Çap)</label>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                {['1-5', '5-10', '10-20', '20+'].map(size => (
+                                                {availableDamageSizes.map(size => (
                                                     <button
                                                         key={size}
                                                         onClick={() => setDamageSize(size)}
@@ -223,7 +241,7 @@ function DamageRepair() {
                                         </p>
 
                                         <Link
-                                            to="/randevu"
+                                            to={`/randevu?service=Boyasız Hasar Onarım&vehicleType=${encodeURIComponent(vehicleType)}&damageSize=${encodeURIComponent(damageSize)}&estimatedPrice=${calculatedPrice}`}
                                             className="w-full py-4 border border-red-600 bg-red-600/10 hover:bg-red-600 text-white transition-all duration-500 text-xs sm:text-sm font-light tracking-[0.2em] flex items-center justify-center space-x-3 group"
                                         >
                                             <span>HEMEN RANDEVU AL</span>
