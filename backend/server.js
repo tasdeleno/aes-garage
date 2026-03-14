@@ -261,12 +261,26 @@ const Gallery = mongoose.model('Gallery', GallerySchema);
 
 // ============ PRICING SCHEMA (Boyasız Hasar Onarım - Fiyat Hesaplama Parametreleri) ============
 const DEFAULT_VEHICLE_MULTIPLIERS = { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 };
-const DEFAULT_DAMAGE_MULTIPLIERS = { 'Küçük': 1, 'Orta': 1.5, 'Büyük': 2, 'Çok Büyük': 2.5 };
+const DEFAULT_DAMAGE_CATEGORIES = [
+  { label: 'Küçük', multiplier: 1, image: '', priceMin: 500, priceMax: 800, description: 'Bozuk para büyüklüğünde küçük göçükler' },
+  { label: 'Orta', multiplier: 1.5, image: '', priceMin: 800, priceMax: 1500, description: 'Yumurta büyüklüğünde orta göçükler' },
+  { label: 'Büyük', multiplier: 2, image: '', priceMin: 1500, priceMax: 2500, description: 'Avuç içi büyüklüğünde büyük göçükler' },
+  { label: 'Çok Büyük', multiplier: 2.5, image: '', priceMin: 2500, priceMax: 4000, description: 'Avuç içinden büyük, derin göçükler' }
+];
+
+const DamageCategorySchema = new mongoose.Schema({
+  label: { type: String, required: true },
+  multiplier: { type: Number, required: true, default: 1 },
+  image: { type: String, default: '' },
+  priceMin: { type: Number, default: 0 },
+  priceMax: { type: Number, default: 0 },
+  description: { type: String, default: '' }
+}, { _id: true });
 
 const PricingSchema = new mongoose.Schema({
   basePrice: { type: Number, required: true, default: 500 },
   vehicleMultipliers: { type: mongoose.Schema.Types.Mixed, default: () => ({ ...DEFAULT_VEHICLE_MULTIPLIERS }) },
-  damageMultipliers: { type: mongoose.Schema.Types.Mixed, default: () => ({ ...DEFAULT_DAMAGE_MULTIPLIERS }) },
+  damageCategories: { type: [DamageCategorySchema], default: () => DEFAULT_DAMAGE_CATEGORIES.map(c => ({ ...c })) },
   updatedAt: { type: Date, default: Date.now }
 });
 
@@ -906,15 +920,30 @@ app.delete('/api/gallery/:id', authMiddleware, async (req, res) => {
 
 // ============ DAMAGE PRICING (Boyasız Hasar Onarım - Fiyat Hesaplama) ============
 
-// Public: Fiyat parametrelerini getir (yoksa default oluştur)
+// Public: Fiyat parametrelerini getir (yoksa default oluştur, eski veriyi migrate et)
 app.get('/api/damage-pricing', async (req, res) => {
   try {
-    let pricing = await Pricing.findOne().lean();
+    let pricing = await Pricing.findOne();
     if (!pricing) {
-      pricing = await new Pricing({}).save();
-      pricing = pricing.toObject();
+      pricing = new Pricing({});
+      await pricing.save();
     }
-    res.json(pricing);
+
+    // Eski damageMultipliers verisini damageCategories'e migrate et
+    if ((!pricing.damageCategories || pricing.damageCategories.length === 0) && pricing.damageMultipliers) {
+      const migrated = Object.entries(pricing.damageMultipliers).map(([label, multiplier]) => ({
+        label,
+        multiplier: Number(multiplier),
+        image: '',
+        priceMin: Math.round(pricing.basePrice * Number(multiplier)),
+        priceMax: Math.round(pricing.basePrice * Number(multiplier) * 1.5),
+        description: ''
+      }));
+      pricing.damageCategories = migrated;
+      await pricing.save();
+    }
+
+    res.json(pricing.toObject());
   } catch (error) {
     res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
@@ -923,13 +952,12 @@ app.get('/api/damage-pricing', async (req, res) => {
 // Admin: Fiyat parametrelerini güncelle (singleton - upsert)
 app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
   try {
-    const { basePrice, vehicleMultipliers, damageMultipliers } = req.body;
+    const { basePrice, vehicleMultipliers, damageCategories } = req.body;
 
     if (basePrice !== undefined && (typeof basePrice !== 'number' || basePrice < 0)) {
       return res.status(400).json({ message: 'Geçersiz taban fiyat' });
     }
 
-    // Mixed tiplerde findOneAndUpdate sorun çıkarabilir, bu yüzden find + save kullanıyoruz
     let pricing = await Pricing.findOne();
     if (!pricing) pricing = new Pricing({});
 
@@ -938,9 +966,16 @@ app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
       pricing.vehicleMultipliers = vehicleMultipliers;
       pricing.markModified('vehicleMultipliers');
     }
-    if (damageMultipliers !== undefined) {
-      pricing.damageMultipliers = damageMultipliers;
-      pricing.markModified('damageMultipliers');
+    if (damageCategories !== undefined) {
+      if (!Array.isArray(damageCategories) || damageCategories.length === 0) {
+        return res.status(400).json({ message: 'En az bir hasar kategorisi gerekli' });
+      }
+      for (const cat of damageCategories) {
+        if (!cat.label || cat.multiplier === undefined) {
+          return res.status(400).json({ message: 'Her kategori için etiket ve çarpan zorunludur' });
+        }
+      }
+      pricing.damageCategories = damageCategories;
     }
     pricing.updatedAt = Date.now();
 
@@ -951,7 +986,18 @@ app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
   }
 });
 
-// Public: Fiyat hesaplama (araç tipi + hasar büyüklüğü → tahmini fiyat)
+// Admin: Hasar kategorisi resmi yükle
+app.post('/api/damage-pricing/upload-image', authMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Resim dosyası gerekli' });
+    const imageUrl = await uploadFile(req.file);
+    res.json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Resim yüklenirken hata oluştu' });
+  }
+});
+
+// Public: Fiyat hesaplama (araç tipi + hasar kategorisi → tahmini fiyat)
 app.post('/api/damage-pricing/calculate', async (req, res) => {
   try {
     const { vehicleType, damageSize } = req.body;
@@ -966,25 +1012,31 @@ app.post('/api/damage-pricing/calculate', async (req, res) => {
     }
 
     const vehicleMultiplier = pricing.vehicleMultipliers?.[vehicleType];
-    const damageMultiplier = pricing.damageMultipliers?.[damageSize];
-
     if (vehicleMultiplier === undefined) {
       return res.status(400).json({ message: `Geçersiz araç tipi: ${vehicleType}` });
     }
-    if (damageMultiplier === undefined) {
+
+    const category = pricing.damageCategories?.find(c => c.label === damageSize);
+    if (!category) {
       return res.status(400).json({ message: `Geçersiz hasar büyüklüğü: ${damageSize}` });
     }
 
-    const estimatedPrice = Math.round(pricing.basePrice * vehicleMultiplier * damageMultiplier);
+    const estimatedPrice = Math.round(pricing.basePrice * vehicleMultiplier * category.multiplier);
 
     res.json({
       estimatedPrice,
+      priceRange: {
+        min: Math.round(category.priceMin * vehicleMultiplier),
+        max: Math.round(category.priceMax * vehicleMultiplier)
+      },
       breakdown: {
         basePrice: pricing.basePrice,
         vehicleType,
         vehicleMultiplier,
-        damageSize,
-        damageMultiplier
+        damageSize: category.label,
+        damageMultiplier: category.multiplier,
+        categoryDescription: category.description,
+        categoryImage: category.image
       }
     });
   } catch (error) {
