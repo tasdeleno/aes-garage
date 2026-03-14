@@ -209,6 +209,9 @@ const AppointmentSchema = new mongoose.Schema({
   time: { type: String, required: true },
   message: String,
   oilType: { type: String, default: '' },
+  estimatedPrice: { type: Number, default: null },
+  vehicleType: { type: String, default: '' },
+  damageSize: { type: String, default: '' },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' },
   trackingCode: { type: String, unique: true },
   reminderSent: { type: Boolean, default: false },
@@ -393,7 +396,7 @@ app.post('/api/auth/logout', (req, res) => {
 // Public: Randevu oluştur
 app.post('/api/appointments', formLimiter, async (req, res) => {
   try {
-    const { name, phone, email, service, date, time, message, oilType } = req.body;
+    const { name, phone, email, service, date, time, message, oilType, estimatedPrice, vehicleType, damageSize } = req.body;
 
     const contactError = validateContact(name, email, phone);
     if (contactError) return res.status(400).json({ message: contactError });
@@ -409,7 +412,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
 
     const trackingCode = 'AES-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
-    const newAppointment = await new Appointment({
+    const appointmentData = {
       name: sanitize(name),
       phone: sanitize(phone),
       email: sanitize(email),
@@ -418,14 +421,22 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
       message: message ? sanitize(message) : '',
       oilType: oilType ? sanitize(oilType) : '',
       trackingCode
-    }).save();
+    };
+
+    // Boyasız hasar onarım fiyat bilgisi varsa kaydet
+    if (estimatedPrice != null) appointmentData.estimatedPrice = Number(estimatedPrice);
+    if (vehicleType) appointmentData.vehicleType = sanitize(vehicleType);
+    if (damageSize) appointmentData.damageSize = sanitize(damageSize);
+
+    const newAppointment = await new Appointment(appointmentData).save();
 
     // Arka planda bildirimler gönder (response'u bekletme)
     const dateStr = new Date(date).toLocaleDateString('tr-TR');
+    const priceInfo = estimatedPrice ? `\n💰 Tahmini Fiyat: ${Number(estimatedPrice).toLocaleString('tr-TR')} ₺` : '';
 
     const adminWhatsApp = process.env.ADMIN_WHATSAPP;
     if (adminWhatsApp) {
-      sendWhatsApp(adminWhatsApp, `🔔 *Yeni Randevu!*\n👤 ${name}\n📱 ${phone}\n🔧 ${service}\n📅 ${dateStr} - ${time}${oilType ? '\n🛢️ Yağ: ' + oilType : ''}\n🚗 ${message || '-'}\n📋 Kod: ${trackingCode}`);
+      sendWhatsApp(adminWhatsApp, `🔔 *Yeni Randevu!*\n👤 ${name}\n📱 ${phone}\n🔧 ${service}\n📅 ${dateStr} - ${time}${oilType ? '\n🛢️ Yağ: ' + oilType : ''}${priceInfo}\n🚗 ${message || '-'}\n📋 Kod: ${trackingCode}`);
     }
 
     if (email) {
@@ -433,7 +444,7 @@ app.post('/api/appointments', formLimiter, async (req, res) => {
         emailTemplate(
           `<p style="color:#ccc;">Merhaba <strong>${escapeHtml(name)}</strong>,</p>
           <p style="color:#ccc;">Randevunuz başarıyla oluşturuldu.</p>
-          ${emailBlock(emailLine('📅', `${dateStr} - ${time}`, true) + emailLine('🔧', escapeHtml(service)))}
+          ${emailBlock(emailLine('📅', `${dateStr} - ${time}`, true) + emailLine('🔧', escapeHtml(service)) + (estimatedPrice ? emailLine('💰', `Tahmini Fiyat: ${Number(estimatedPrice).toLocaleString('tr-TR')} ₺`) : ''))}
           <div style="text-align:center;padding:20px;background:#dc2626;margin:15px 0;">
             <p style="margin:0;font-size:12px;color:#fca5a5;">TAKİP KODUNUZ</p>
             <p style="margin:5px 0;font-size:24px;font-weight:300;letter-spacing:3px;color:#fff;">${trackingCode}</p>
@@ -937,6 +948,47 @@ app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
     res.json(pricing);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Public: Fiyat hesaplama (araç tipi + hasar büyüklüğü → tahmini fiyat)
+app.post('/api/damage-pricing/calculate', async (req, res) => {
+  try {
+    const { vehicleType, damageSize } = req.body;
+    if (!vehicleType || !damageSize) {
+      return res.status(400).json({ message: 'Araç tipi ve hasar büyüklüğü zorunludur' });
+    }
+
+    let pricing = await Pricing.findOne().lean();
+    if (!pricing) {
+      pricing = await new Pricing({}).save();
+      pricing = pricing.toObject();
+    }
+
+    const vehicleMultiplier = pricing.vehicleMultipliers?.[vehicleType];
+    const damageMultiplier = pricing.damageMultipliers?.[damageSize];
+
+    if (vehicleMultiplier === undefined) {
+      return res.status(400).json({ message: `Geçersiz araç tipi: ${vehicleType}` });
+    }
+    if (damageMultiplier === undefined) {
+      return res.status(400).json({ message: `Geçersiz hasar büyüklüğü: ${damageSize}` });
+    }
+
+    const estimatedPrice = Math.round(pricing.basePrice * vehicleMultiplier * damageMultiplier);
+
+    res.json({
+      estimatedPrice,
+      breakdown: {
+        basePrice: pricing.basePrice,
+        vehicleType,
+        vehicleMultiplier,
+        damageSize,
+        damageMultiplier
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
   }
 });
 
