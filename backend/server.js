@@ -1005,23 +1005,48 @@ app.post('/api/damage-pricing/calculate', async (req, res) => {
       return res.status(400).json({ message: 'Araç tipi ve hasar büyüklüğü zorunludur' });
     }
 
-    let pricing = await Pricing.findOne().lean();
+    let pricing = await Pricing.findOne();
     if (!pricing) {
-      pricing = await new Pricing({}).save();
-      pricing = pricing.toObject();
+      pricing = new Pricing({});
+      await pricing.save();
     }
 
-    const vehicleMultiplier = pricing.vehicleMultipliers?.[vehicleType];
+    // Eski yapıdan migration: damageCategories yoksa damageMultipliers'dan oluştur
+    if ((!pricing.damageCategories || pricing.damageCategories.length === 0) && pricing.damageMultipliers) {
+      const migrated = Object.entries(pricing.damageMultipliers).map(([label, multiplier]) => ({
+        label,
+        multiplier: Number(multiplier),
+        image: '',
+        priceMin: Math.round(pricing.basePrice * Number(multiplier)),
+        priceMax: Math.round(pricing.basePrice * Number(multiplier) * 1.5),
+        description: ''
+      }));
+      pricing.damageCategories = migrated;
+      await pricing.save();
+    }
+
+    const pricingObj = pricing.toObject ? pricing.toObject() : pricing;
+
+    const vehicleMultiplier = pricingObj.vehicleMultipliers?.[vehicleType];
     if (vehicleMultiplier === undefined) {
-      return res.status(400).json({ message: `Geçersiz araç tipi: ${vehicleType}` });
+      return res.status(400).json({
+        message: `Geçersiz araç tipi: ${vehicleType}`,
+        validTypes: Object.keys(pricingObj.vehicleMultipliers || {})
+      });
     }
 
-    const category = pricing.damageCategories?.find(c => c.label === damageSize);
+    // Label veya _id ile eşleştir
+    const category = pricingObj.damageCategories?.find(
+      c => c.label === damageSize || (c._id && c._id.toString() === damageSize)
+    );
     if (!category) {
-      return res.status(400).json({ message: `Geçersiz hasar büyüklüğü: ${damageSize}` });
+      return res.status(400).json({
+        message: `Geçersiz hasar büyüklüğü: ${damageSize}`,
+        validSizes: (pricingObj.damageCategories || []).map(c => c.label)
+      });
     }
 
-    const estimatedPrice = Math.round(pricing.basePrice * vehicleMultiplier * category.multiplier);
+    const estimatedPrice = Math.round(pricingObj.basePrice * vehicleMultiplier * category.multiplier);
 
     res.json({
       estimatedPrice,
@@ -1030,7 +1055,7 @@ app.post('/api/damage-pricing/calculate', async (req, res) => {
         max: Math.round(category.priceMax * vehicleMultiplier)
       },
       breakdown: {
-        basePrice: pricing.basePrice,
+        basePrice: pricingObj.basePrice,
         vehicleType,
         vehicleMultiplier,
         damageSize: category.label,
