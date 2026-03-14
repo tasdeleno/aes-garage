@@ -115,11 +115,20 @@ function Admin() {
     customStages: [],
   });
   const [newOilType, setNewOilType] = useState('');
-  
+
   // ─── Özel Araç Ekleme Form State ───
   const [newCustomCar, setNewCustomCar] = useState({ brand: '', model: '', engine: '', hp: '', year: '' });
   // ─── Özel Stage HP Ekleme Form State ───
   const [newCustomStage, setNewCustomStage] = useState({ brand: '', model: '', engine: '', stage1HP: '', stage2HP: '', stage3HP: '' });
+
+  // ─── Hasar Onarım (Göçük Düzeltme) ───
+  const [damageGallery, setDamageGallery] = useState([]);
+  const [damagePricing, setDamagePricing] = useState({
+    basePrice: 1500,
+    vehicleMultipliers: { sedan: 1, hatchback: 1, suv: 1.2, pickup: 1.3, luks: 1.5 },
+    damageMultipliers: { '1-5': 1, '5-10': 1.5, '10-20': 2.5, '20+': 4 }
+  });
+  const [newGalleryItem, setNewGalleryItem] = useState({ title: '', description: '', beforeImage: '', afterImage: '' });
 
 
   // ─── Dinamik Servis Listesi ───
@@ -237,6 +246,19 @@ function Admin() {
     }
   };
 
+  const fetchDamageRepair = async () => {
+    try {
+      const gRes = await axios.get(`${API}/api/gallery`).catch(() => ({ data: [] }));
+      if (gRes.data && Array.isArray(gRes.data)) setDamageGallery(gRes.data);
+
+      const pRes = await axios.get(`${API}/api/damage-pricing`).catch(() => ({ data: null }));
+      if (pRes.data && pRes.data.basePrice) setDamagePricing(pRes.data);
+    } catch (err) {
+      console.error('Damage repair data error:', err);
+    }
+  };
+
+
   const fetchSettings = async () => {
     try {
       const response = await axios.get(`${API}/api/settings`);
@@ -252,7 +274,7 @@ function Admin() {
       if (img.heroImage) setSiteImages(prev => ({ ...prev, heroImage: img.heroImage }));
       if (img.logo) setSiteImages(prev => ({ ...prev, logo: img.logo }));
 
-      try { if (general.servicesList) setServicesList(JSON.parse(general.servicesList)); } catch(e) {}
+      try { if (general.servicesList) setServicesList(JSON.parse(general.servicesList)); } catch (e) { }
       try {
         if (general.chiptuningData) {
           const parsed = JSON.parse(general.chiptuningData);
@@ -263,7 +285,7 @@ function Admin() {
             customStages: Array.isArray(parsed.customStages) ? parsed.customStages : [],
           }));
         }
-      } catch(e) {}
+      } catch (e) { }
 
       // İletişim bilgileri
       if (contact.phone) setContactInfo(prev => ({ ...prev, phone: contact.phone }));
@@ -273,14 +295,14 @@ function Admin() {
       if (contact.workingHours) setContactInfo(prev => ({ ...prev, workingHours: contact.workingHours }));
       if (contact.instagramUrl) setContactInfo(prev => ({ ...prev, instagramUrl: contact.instagramUrl }));
 
-      try { if (home.heroContent) setHeroContent(JSON.parse(home.heroContent)); } catch(e) {}
-      try { if (home.sectionServices) setSectionServices(JSON.parse(home.sectionServices)); } catch(e) {}
-      try { if (home.reviewsMeta) setReviewsMeta(JSON.parse(home.reviewsMeta)); } catch(e) {}
-      try { if (home.reviews) setReviews(JSON.parse(home.reviews)); } catch(e) {}
-      try { if (home.references) setReferences(JSON.parse(home.references)); } catch(e) {}
-      try { if (home.partners) setPartners(JSON.parse(home.partners)); } catch(e) {}
-      try { if (home.faqItems) setFaqItems(JSON.parse(home.faqItems)); } catch(e) {}
-      try { if (home.ctaContent) setCtaContent(JSON.parse(home.ctaContent)); } catch(e) {}
+      try { if (home.heroContent) setHeroContent(JSON.parse(home.heroContent)); } catch (e) { }
+      try { if (home.sectionServices) setSectionServices(JSON.parse(home.sectionServices)); } catch (e) { }
+      try { if (home.reviewsMeta) setReviewsMeta(JSON.parse(home.reviewsMeta)); } catch (e) { }
+      try { if (home.reviews) setReviews(JSON.parse(home.reviews)); } catch (e) { }
+      try { if (home.references) setReferences(JSON.parse(home.references)); } catch (e) { }
+      try { if (home.partners) setPartners(JSON.parse(home.partners)); } catch (e) { }
+      try { if (home.faqItems) setFaqItems(JSON.parse(home.faqItems)); } catch (e) { }
+      try { if (home.ctaContent) setCtaContent(JSON.parse(home.ctaContent)); } catch (e) { }
     } catch (err) {
       console.error('Error:', err);
     }
@@ -291,6 +313,7 @@ function Admin() {
       fetchAppointments();
       fetchSettings();
       fetchContactMessages();
+      fetchDamageRepair();
     }
     // eslint-disable-next-line
   }, [isAuthenticated]);
@@ -376,6 +399,50 @@ function Admin() {
     finally { setUploadingImage(null); }
   };
 
+  const handleGalleryUpload = async (field, file) => {
+    if (!file) return;
+    setUploadingImage(`gallery-${field}`);
+    try {
+      const url = await uploadImage(file);
+      setNewGalleryItem(prev => ({ ...prev, [field]: url }));
+    } catch (err) { alert('Hata oluştu!'); }
+    finally { setUploadingImage(null); }
+  };
+
+  const saveNewGalleryItem = async () => {
+    if (!newGalleryItem.title || !newGalleryItem.beforeImage || !newGalleryItem.afterImage) {
+      alert("Başlık, Öncesi ve Sonrası görselleri zorunludur.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await axios.post(`${API}/api/gallery`, newGalleryItem);
+      alert('Galeri eklendi!');
+      setNewGalleryItem({ title: '', description: '', beforeImage: '', afterImage: '' });
+      fetchDamageRepair();
+    } catch (err) { alert('Hata oluştu!'); }
+    finally { setSaving(false); }
+  };
+
+  const deleteGalleryItem = async (id) => {
+    if (window.confirm('Bu galeriyi silmek istediğinize emin misiniz?')) {
+      try {
+        await axios.delete(`${API}/api/gallery/${id}`);
+        fetchDamageRepair();
+      } catch (err) { alert('Hata oluştu!'); }
+    }
+  };
+
+  const saveDamagePricing = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/api/damage-pricing`, damagePricing);
+      alert('Fiyatlandırma kaydedildi!');
+    } catch (err) { alert('Hata oluştu!'); }
+    finally { setSaving(false); }
+  };
+
+
   // ════════════════════════════════════
   //  SAVE FUNCTIONS
   // ════════════════════════════════════
@@ -428,7 +495,7 @@ function Admin() {
   const updateService = (idx, field, val) => { const c = [...servicesList]; c[idx] = { ...c[idx], [field]: val }; setServicesList(c); };
   const addService = () => setServicesList([...servicesList, { title: '', description: '', image: '', features: '', duration: '', priceMin: '', priceMax: '', priceNote: '' }]);
   const removeService = (idx) => { if (window.confirm('Bu servisi silmek istediğinize emin misiniz?')) setServicesList(servicesList.filter((_, i) => i !== idx)); };
-  const moveService = (idx, dir) => { const c = [...servicesList]; const t = idx + dir; if (t < 0 || t >= c.length) return; [c[idx], c[t]] = [c[t], c[idx]]; setServicesList(c); };
+  const moveService = (idx, dir) => { const c = [...servicesList]; const t = idx + dir; if (t < 0 || t >= c.length) return;[c[idx], c[t]] = [c[t], c[idx]]; setServicesList(c); };
 
   const updateReview = (idx, field, val) => { const c = [...reviews]; c[idx] = { ...c[idx], [field]: val }; setReviews(c); };
   const addReview = () => setReviews([...reviews, { name: '', rating: '5', text: '', date: '' }]);
@@ -502,6 +569,7 @@ function Admin() {
             { key: 'messages', label: `MESAJLAR${unreadCount > 0 ? ` (${unreadCount})` : ''}` },
             { key: 'services', label: 'HİZMETLER & FİYATLAR' },
             { key: 'chiptuning', label: 'CHİPTUNİNG' },
+            { key: 'damageRepair', label: 'HASAR ONARIM' },
             { key: 'contact', label: 'İLETİŞİM BİLGİLERİ' },
             { key: 'homeContent', label: 'ANA SAYFA İÇERİK' },
           ].map(tab => (
@@ -1023,7 +1091,7 @@ function Admin() {
                   <input className={inputClass} placeholder="Model" value={newCustomCar.model} onChange={e => setNewCustomCar({ ...newCustomCar, model: e.target.value })} />
                   <input className={inputClass} placeholder="Motor" value={newCustomCar.engine} onChange={e => setNewCustomCar({ ...newCustomCar, engine: e.target.value })} />
                   <input className={inputClass} type="number" placeholder="Mevcut HP" value={newCustomCar.hp} onChange={e => setNewCustomCar({ ...newCustomCar, hp: e.target.value })} />
-                  <button 
+                  <button
                     onClick={() => {
                       if (newCustomCar.brand && newCustomCar.model && newCustomCar.engine && newCustomCar.hp) {
                         setChiptuningData(prev => ({ ...prev, customCars: [...(prev.customCars || []), newCustomCar] }));
@@ -1044,7 +1112,7 @@ function Admin() {
                       <div className="text-sm font-light text-gray-300">
                         <span className="text-white">{car.brand} {car.model}</span> — {car.engine} ({car.hp} HP)
                       </div>
-                      <button 
+                      <button
                         onClick={() => setChiptuningData(prev => ({ ...prev, customCars: prev.customCars.filter((_, idx) => idx !== i) }))}
                         className={btnDanger}
                       >
@@ -1072,7 +1140,7 @@ function Admin() {
                   <input className={inputClass} type="number" placeholder="Stage 1 HP" value={newCustomStage.stage1HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage1HP: e.target.value })} />
                   <input className={inputClass} type="number" placeholder="Stage 2 HP" value={newCustomStage.stage2HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage2HP: e.target.value })} />
                   <input className={inputClass} type="number" placeholder="Stage 3 HP" value={newCustomStage.stage3HP} onChange={e => setNewCustomStage({ ...newCustomStage, stage3HP: e.target.value })} />
-                  <button 
+                  <button
                     onClick={() => {
                       if (newCustomStage.brand && newCustomStage.model && newCustomStage.engine) {
                         setChiptuningData(prev => ({ ...prev, customStages: [...(prev.customStages || []), newCustomStage] }));
@@ -1096,7 +1164,7 @@ function Admin() {
                           [Stage 1: {stage.stage1HP || '-'}] [Stage 2: {stage.stage2HP || '-'}] [Stage 3: {stage.stage3HP || '-'}]
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setChiptuningData(prev => ({ ...prev, customStages: prev.customStages.filter((_, idx) => idx !== i) }))}
                         className={btnDanger}
                       >
@@ -1130,6 +1198,125 @@ function Admin() {
                 {saving ? 'KAYDEDİLİYOR...' : 'CHİPTUNİNG VERİLERİNİ KAYDET'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════ TAB: HASAR ONARIM ═══════════ */}
+        {activeTab === 'damageRepair' && (
+          <div className="space-y-8">
+            <div className="p-6 border border-red-600/20 bg-red-600/5 rounded">
+              <h2 className="text-xl font-light tracking-wider mb-2">Hasar Onarım (Göçük Düzeltme) Yönetimi</h2>
+              <p className="text-sm text-gray-400 font-light leading-relaxed">
+                Boyasız hasar onarım sayfasındaki Önce/Sonra galerisini ve Fiyat Hesaplama aracı çarpanlarını yönetin.
+              </p>
+            </div>
+
+            {/* Fiyatlandırma Yönetimi */}
+            <div className="border border-dark-800 p-6 space-y-4">
+              <SectionTitle title="Fiyat Hesaplama Parametreleri" description="Hesaplama formülü: Baz Fiyat × Araç Çarpanı × Hasar Çarpanı" />
+
+              <div className="mb-4">
+                <label className="block text-xs tracking-widest text-gray-500 mb-2">BAZ FİYAT (₺) (En Düşük Sınıf / En Küçük Hasar İçin)</label>
+                <input
+                  type="number" className={inputClass}
+                  value={damagePricing.basePrice}
+                  onChange={e => setDamagePricing({ ...damagePricing, basePrice: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                {/* Araç Çarpanları */}
+                <div>
+                  <h4 className="text-sm tracking-wider text-gray-300 border-b border-dark-700 pb-2 mb-4">Araç Çarpanları</h4>
+                  <div className="space-y-3">
+                    {Object.keys(damagePricing.vehicleMultipliers).map(v => (
+                      <div key={v} className="flex justify-between items-center gap-4">
+                        <span className="text-xs text-gray-400 uppercase tracking-widest w-24">{v}</span>
+                        <input
+                          type="number" step="0.1" className={inputClass}
+                          value={damagePricing.vehicleMultipliers[v]}
+                          onChange={e => setDamagePricing({ ...damagePricing, vehicleMultipliers: { ...damagePricing.vehicleMultipliers, [v]: Number(e.target.value) } })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hasar Çarpanları */}
+                <div>
+                  <h4 className="text-sm tracking-wider text-gray-300 border-b border-dark-700 pb-2 mb-4">Hasar Çarpanları</h4>
+                  <div className="space-y-3">
+                    {Object.keys(damagePricing.damageMultipliers).map(d => (
+                      <div key={d} className="flex justify-between items-center gap-4">
+                        <span className="text-xs text-gray-400 uppercase tracking-widest w-24">{d} cm</span>
+                        <input
+                          type="number" step="0.1" className={inputClass}
+                          value={damagePricing.damageMultipliers[d]}
+                          onChange={e => setDamagePricing({ ...damagePricing, damageMultipliers: { ...damagePricing.damageMultipliers, [d]: Number(e.target.value) } })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={saveDamagePricing} disabled={saving} className={btnOutline + ' mt-6'}>
+                FİYATLANDIRMAYI KAYDET
+              </button>
+            </div>
+
+            {/* Galeri Yönetimi */}
+            <div className="border border-dark-800 p-6 space-y-6">
+              <SectionTitle title="Önce & Sonra Galerisi" description="Sayfada sergilenecek onarım öncesi ve sonrası görselleri" />
+
+              {/* Yeni Galeri Ekleme Formu */}
+              <div className="bg-dark-900/50 border border-dark-700 p-4 space-y-4 rounded">
+                <h4 className="text-sm text-gray-300 tracking-wider">Yeni Görsel Ekle</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Başlık (Araç Marka Model)</label>
+                    <input className={inputClass} value={newGalleryItem.title} onChange={e => setNewGalleryItem({ ...newGalleryItem, title: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Açıklama</label>
+                    <input className={inputClass} value={newGalleryItem.description} onChange={e => setNewGalleryItem({ ...newGalleryItem, description: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Öncesi Resim</label>
+                    {newGalleryItem.beforeImage && <img src={newGalleryItem.beforeImage} alt="Öncesi" className="h-24 object-cover mb-2 border border-dark-700" />}
+                    <input type="file" accept="image/*" onChange={(e) => handleGalleryUpload('beforeImage', e.target.files[0])} disabled={uploadingImage === 'gallery-beforeImage'} className={fileInputClass} />
+                    {uploadingImage === 'gallery-beforeImage' && <p className="text-xs text-gray-400 mt-1">Yükleniyor...</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Sonrası Resim</label>
+                    {newGalleryItem.afterImage && <img src={newGalleryItem.afterImage} alt="Sonrası" className="h-24 object-cover mb-2 border border-dark-700" />}
+                    <input type="file" accept="image/*" onChange={(e) => handleGalleryUpload('afterImage', e.target.files[0])} disabled={uploadingImage === 'gallery-afterImage'} className={fileInputClass} />
+                    {uploadingImage === 'gallery-afterImage' && <p className="text-xs text-gray-400 mt-1">Yükleniyor...</p>}
+                  </div>
+                </div>
+                <button onClick={saveNewGalleryItem} disabled={saving} className={btnOutline + " w-full bg-red-600/10"}>+ GALERİYE EKLE</button>
+              </div>
+
+              {/* Mevcut Galeriyi Listele */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-4">
+                {damageGallery.map(g => (
+                  <div key={g._id} className="border border-dark-700 bg-black relative">
+                    <button onClick={() => deleteGalleryItem(g._id)} className="absolute top-2 right-2 bg-red-600 z-10 px-2 py-1 text-xs text-white">X</button>
+                    <div className="flex h-32">
+                      <img src={g.beforeImage} alt="" className="w-1/2 object-cover border-r border-dark-700" />
+                      <img src={g.afterImage} alt="" className="w-1/2 object-cover" />
+                    </div>
+                    <div className="p-3">
+                      <h5 className="text-sm font-light text-white">{g.title}</h5>
+                      <p className="text-xs text-gray-500">{g.description}</p>
+                    </div>
+                  </div>
+                ))}
+                {damageGallery.length === 0 && <p className="text-sm text-gray-500">Henüz galeri görseli eklenmemiş.</p>}
+              </div>
+
+            </div>
+
           </div>
         )}
 

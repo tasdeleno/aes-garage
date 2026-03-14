@@ -14,6 +14,7 @@ const KVKK = lazy(() => import('./pages/KVKK'));
 const TrackAppointment = lazy(() => import('./pages/TrackAppointment'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const LoadingScreen = lazy(() => import('./components/LoadingScreen'));
+const DamageRepair = lazy(() => import('./pages/DamageRepair'));
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -215,19 +216,20 @@ function App() {
 
         <main>
           <Suspense fallback={<div className="min-h-screen bg-black" />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/hakkimizda" element={<About />} />
-            <Route path="/hizmetler" element={<Services />} />
-            <Route path="/chiptuning" element={<Chiptuning />} />
-            <Route path="/fiyatlar" element={<Pricing />} />
-            <Route path="/randevu" element={<Appointment />} />
-            <Route path="/iletisim" element={<Contact />} />
-            <Route path="/randevu-takip" element={<TrackAppointment />} />
-            <Route path="/kvkk" element={<KVKK />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/hakkimizda" element={<About />} />
+              <Route path="/hizmetler" element={<Services />} />
+              <Route path="/chiptuning" element={<Chiptuning />} />
+              <Route path="/fiyatlar" element={<Pricing />} />
+              <Route path="/randevu" element={<Appointment />} />
+              <Route path="/iletisim" element={<Contact />} />
+              <Route path="/hasar-onarimi" element={<DamageRepair />} />
+              <Route path="/randevu-takip" element={<TrackAppointment />} />
+              <Route path="/kvkk" element={<KVKK />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </Suspense>
         </main>
 

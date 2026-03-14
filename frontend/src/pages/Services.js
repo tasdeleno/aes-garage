@@ -78,7 +78,7 @@ function Services() {
             }
             // parsed boş array ise defaultServices korunur
           }
-        } catch(e) {
+        } catch (e) {
           console.error('servicesList parse error:', e);
           // parse hatası durumunda defaultServices korunur
         }
@@ -200,7 +200,7 @@ function Services() {
                       className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm border border-white/20 hover:border-pink-500 hover:bg-pink-600/20 transition-all duration-300 group/ig"
                     >
                       <svg className="w-4 h-4 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
                       </svg>
                       <span className="text-[10px] sm:text-xs font-light tracking-wider text-white">İnstagramda Gör</span>
                     </a>
@@ -245,15 +245,28 @@ function Services() {
                     <p className="text-[10px] sm:text-xs text-gray-600 font-light mt-2">{service.priceNote}</p>
                   )}
 
-                  <Link
-                    to="/randevu"
-                    className="group/btn mt-4 sm:mt-6 w-full py-3 sm:py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
-                  >
-                    <span className="text-xs sm:text-sm font-light tracking-widest">RANDEVU AL</span>
-                    <svg className="w-4 h-4 transform group-hover/btn:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </Link>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                    {service.title && service.title.toLowerCase().includes('kaporta') && (
+                      <Link
+                        to="/hasar-onarimi"
+                        className="group/btn w-full py-3 sm:py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
+                      >
+                        <span className="text-xs sm:text-sm font-light tracking-widest text-red-500">GÖÇÜK DÜZELTME</span>
+                        <svg className="w-4 h-4 text-red-500 transform group-hover/btn:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Link>
+                    )}
+                    <Link
+                      to="/randevu"
+                      className="group/btn w-full py-3 sm:py-4 border border-dark-800 hover:border-red-600 hover:bg-red-600/10 flex items-center justify-center space-x-3 transition-all duration-300 active:scale-[0.98] touch-manipulation"
+                    >
+                      <span className="text-xs sm:text-sm font-light tracking-widest">RANDEVU AL</span>
+                      <svg className="w-4 h-4 transform group-hover/btn:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
