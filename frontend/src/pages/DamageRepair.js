@@ -219,7 +219,7 @@ function DamageRepair() {
                                                             : 'border-dark-700 hover:border-dark-500 text-gray-400'
                                                             }`}
                                                     >
-                                                        {size} cm
+                                                        {size}
                                                     </button>
                                                 ))}
                                             </div>
