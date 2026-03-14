@@ -7,9 +7,9 @@ const API = process.env.REACT_APP_API_URL || '';
 
 // Mock Veriler - (Daha sonra backend'e bağlanacak, bağlanamazsa fallback olarak kullanılacak)
 const mockPricing = {
-    basePrice: 1500, // TL
-    vehicleMultipliers: { sedan: 1, hatchback: 1, suv: 1.2, pickup: 1.3, luks: 1.5 },
-    damageMultipliers: { '1-5': 1, '5-10': 1.5, '10-20': 2.5, '20+': 4 }
+    basePrice: 500, // TL
+    vehicleMultipliers: { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 },
+    damageMultipliers: { 'Küçük': 1, 'Orta': 1.5, 'Büyük': 2, 'Çok Büyük': 2.5 }
 };
 
 const mockGallery = [
@@ -36,8 +36,8 @@ function DamageRepair() {
     const [loading, setLoading] = useState(true);
 
     // Fiyat Hesaplama State
-    const [vehicleType, setVehicleType] = useState('sedan');
-    const [damageSize, setDamageSize] = useState('1-5');
+    const [vehicleType, setVehicleType] = useState('');
+    const [damageSize, setDamageSize] = useState('');
     const [calculatedPrice, setCalculatedPrice] = useState(null);
 
     useEffect(() => {
@@ -53,16 +53,21 @@ function DamageRepair() {
 
                 setGallery(galleryRes.data?.length > 0 ? galleryRes.data : mockGallery);
 
-                // Eğer pricingRes data object dönmüşse al, yoksa mock
-                if (pricingRes.data && pricingRes.data.basePrice) {
-                    setPricingParams(pricingRes.data);
-                } else {
-                    setPricingParams(mockPricing);
+                const finalPricing = (pricingRes.data && pricingRes.data.basePrice) ? pricingRes.data : mockPricing;
+                setPricingParams(finalPricing);
+
+                if (finalPricing.vehicleMultipliers) {
+                    setVehicleType(Object.keys(finalPricing.vehicleMultipliers)[0]);
+                }
+                if (finalPricing.damageMultipliers) {
+                    setDamageSize(Object.keys(finalPricing.damageMultipliers)[0]);
                 }
             } catch (error) {
                 console.error("Veri çekme hatası (Mock kullanılıyor):", error);
                 setGallery(mockGallery);
                 setPricingParams(mockPricing);
+                setVehicleType('Sedan');
+                setDamageSize('Küçük');
             } finally {
                 setLoading(false);
             }
@@ -72,6 +77,8 @@ function DamageRepair() {
     }, []);
 
     useEffect(() => {
+        if (!vehicleType || !damageSize) return;
+
         // Hesaplama Mantığı (Önce backend)
         const checkPriceFromBackend = async () => {
             try {
@@ -98,8 +105,8 @@ function DamageRepair() {
         checkPriceFromBackend();
     }, [vehicleType, damageSize, pricingParams]);
 
-    const availableVehicleTypes = pricingParams && pricingParams.vehicleMultipliers ? Object.keys(pricingParams.vehicleMultipliers) : ['sedan', 'hatchback', 'suv', 'pickup', 'luks'];
-    const availableDamageSizes = pricingParams && pricingParams.damageMultipliers ? Object.keys(pricingParams.damageMultipliers) : ['1-5', '5-10', '10-20', '20+'];
+    const availableVehicleTypes = pricingParams && pricingParams.vehicleMultipliers ? Object.keys(pricingParams.vehicleMultipliers) : Object.keys(mockPricing.vehicleMultipliers);
+    const availableDamageSizes = pricingParams && pricingParams.damageMultipliers ? Object.keys(pricingParams.damageMultipliers) : Object.keys(mockPricing.damageMultipliers);
 
 
     const repairSchema = {
