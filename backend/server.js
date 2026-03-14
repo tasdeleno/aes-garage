@@ -245,6 +245,35 @@ const ContactMessageSchema = new mongoose.Schema({
 
 const ContactMessage = mongoose.model('ContactMessage', ContactMessageSchema);
 
+// ============ GALLERY SCHEMA (Boyasız Hasar Onarım - Önce/Sonra Galerisi) ============
+const GallerySchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  beforeImage: { type: String, required: true },
+  afterImage: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Gallery = mongoose.model('Gallery', GallerySchema);
+
+// ============ PRICING SCHEMA (Boyasız Hasar Onarım - Fiyat Hesaplama Parametreleri) ============
+const PricingSchema = new mongoose.Schema({
+  basePrice: { type: Number, required: true, default: 500 },
+  vehicleMultipliers: {
+    type: Map,
+    of: Number,
+    default: { Sedan: 1, SUV: 1.2, Hatchback: 0.9, Pickup: 1.3, Minivan: 1.25 }
+  },
+  damageMultipliers: {
+    type: Map,
+    of: Number,
+    default: { Küçük: 1, Orta: 1.5, Büyük: 2, 'Çok Büyük': 2.5 }
+  },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Pricing = mongoose.model('Pricing', PricingSchema);
+
 // ============ MULTER ============
 const uploadDir = path.join(__dirname, 'uploads');
 if (!process.env.CLOUDINARY_CLOUD_NAME && !fs.existsSync(uploadDir)) {
@@ -272,6 +301,22 @@ const upload = multer({
     }
   }
 });
+
+// ============ FILE UPLOAD HELPER ============
+async function uploadFile(file) {
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'aes-garage', quality: 'auto', fetch_format: 'auto' },
+        (error, result) => error ? reject(error) : resolve(result)
+      );
+      stream.end(file.buffer);
+    });
+    return result.secure_url;
+  } else {
+    return `/uploads/${file.filename}`;
+  }
+}
 
 // ============ AUTH MIDDLEWARE ============
 const authMiddleware = (req, res, next) => {
@@ -752,6 +797,147 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
     res.json({ message: 'Ayar silindi' });
   } catch (error) {
     res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
+  }
+});
+
+// ============ GALLERY (Boyasız Hasar Onarım - Önce/Sonra Galerisi) ============
+
+// Public: Tüm galeri öğelerini getir
+app.get('/api/gallery', async (req, res) => {
+  try {
+    const items = await Gallery.find().sort({ createdAt: -1 }).lean();
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
+  }
+});
+
+// Admin: Yeni galeri öğesi ekle (resim URL veya dosya yükleme)
+app.post('/api/gallery', authMiddleware, upload.fields([
+  { name: 'beforeImage', maxCount: 1 },
+  { name: 'afterImage', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({ message: 'Başlık zorunludur' });
+    }
+
+    let beforeImage = req.body.beforeImage || '';
+    let afterImage = req.body.afterImage || '';
+
+    // Dosya yüklendiyse, Cloudinary veya local'e kaydet
+    if (req.files) {
+      if (req.files.beforeImage && req.files.beforeImage[0]) {
+        beforeImage = await uploadFile(req.files.beforeImage[0]);
+      }
+      if (req.files.afterImage && req.files.afterImage[0]) {
+        afterImage = await uploadFile(req.files.afterImage[0]);
+      }
+    }
+
+    if (!beforeImage || !afterImage) {
+      return res.status(400).json({ message: 'Önce ve sonra resimleri zorunludur' });
+    }
+
+    const item = await new Gallery({
+      title: sanitize(title),
+      description: description ? sanitize(description) : '',
+      beforeImage,
+      afterImage
+    }).save();
+
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Admin: Galeri öğesi güncelle
+app.put('/api/gallery/:id', authMiddleware, upload.fields([
+  { name: 'beforeImage', maxCount: 1 },
+  { name: 'afterImage', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const item = await Gallery.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Galeri öğesi bulunamadı' });
+
+    const { title, description } = req.body;
+    if (title !== undefined) item.title = sanitize(title);
+    if (description !== undefined) item.description = sanitize(description);
+
+    // URL olarak gönderildiyse body'den al
+    if (req.body.beforeImage) item.beforeImage = req.body.beforeImage;
+    if (req.body.afterImage) item.afterImage = req.body.afterImage;
+
+    // Dosya yüklendiyse üzerine yaz
+    if (req.files) {
+      if (req.files.beforeImage && req.files.beforeImage[0]) {
+        item.beforeImage = await uploadFile(req.files.beforeImage[0]);
+      }
+      if (req.files.afterImage && req.files.afterImage[0]) {
+        item.afterImage = await uploadFile(req.files.afterImage[0]);
+      }
+    }
+
+    await item.save();
+    res.json(item);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Admin: Galeri öğesi sil
+app.delete('/api/gallery/:id', authMiddleware, async (req, res) => {
+  try {
+    const item = await Gallery.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Galeri öğesi bulunamadı' });
+    res.json({ message: 'Galeri öğesi silindi' });
+  } catch (error) {
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
+  }
+});
+
+// ============ DAMAGE PRICING (Boyasız Hasar Onarım - Fiyat Hesaplama) ============
+
+// Public: Fiyat parametrelerini getir (yoksa default oluştur)
+app.get('/api/damage-pricing', async (req, res) => {
+  try {
+    let pricing = await Pricing.findOne().lean();
+    if (!pricing) {
+      pricing = await new Pricing({}).save();
+      pricing = pricing.toObject();
+    }
+    res.json(pricing);
+  } catch (error) {
+    res.status(500).json({ message: 'Bir hata oluştu. Lütfen tekrar deneyin.' });
+  }
+});
+
+// Admin: Fiyat parametrelerini güncelle (singleton - upsert)
+app.put('/api/damage-pricing', authMiddleware, async (req, res) => {
+  try {
+    const { basePrice, vehicleMultipliers, damageMultipliers } = req.body;
+    const update = { updatedAt: Date.now() };
+
+    if (basePrice !== undefined) {
+      if (typeof basePrice !== 'number' || basePrice < 0) {
+        return res.status(400).json({ message: 'Geçersiz taban fiyat' });
+      }
+      update.basePrice = basePrice;
+    }
+    if (vehicleMultipliers !== undefined) update.vehicleMultipliers = vehicleMultipliers;
+    if (damageMultipliers !== undefined) update.damageMultipliers = damageMultipliers;
+
+    const pricing = await Pricing.findOneAndUpdate(
+      {},
+      update,
+      { upsert: true, new: true }
+    );
+
+    res.json(pricing);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 
