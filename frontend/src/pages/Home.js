@@ -350,8 +350,8 @@ function Home() {
     name: 'AES Garage',
     description: 'İstanbul Ataşehir\'de premium araç bakım ve servis merkezi. Periyodik bakım, motor bakımı, fren sistemi, lastik değişimi.',
     url: 'https://aesgarage.com',
-    telephone: '+90-555-123-4567',
-    email: 'bilgi@aesgarage.com',
+    telephone: '+90-551-553-5657',
+    email: 'info@aesgarage.com',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Küçükbakkalköy Yolu Cd. No:44/B',

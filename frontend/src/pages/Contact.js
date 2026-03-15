@@ -17,7 +17,7 @@ function Contact() {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [contactInfo, setContactInfo] = useState({
-    phone: '+90 555 123 45 67',
+    phone: '+90 551 553 5657',
     email: 'info@aesgarage.com',
     address: 'Alver Apt, İçerenköy, Küçükbakkalköy Yolu Cd. No:44/B, 34752 Ataşehir/İstanbul',
     workingHours: 'Pzt-Cmt: 09:00 - 18:00',
@@ -76,8 +76,8 @@ function Contact() {
           '@context': 'https://schema.org',
           '@type': 'AutoRepair',
           name: 'AES Garage',
-          telephone: '+90-555-123-4567',
-          email: 'bilgi@aesgarage.com',
+          telephone: '+90-551-553-5657',
+          email: 'info@aesgarage.com',
           address: { '@type': 'PostalAddress', streetAddress: 'Küçükbakkalköy Yolu Cd. No:44/B', addressLocality: 'Ataşehir', addressRegion: 'İstanbul', postalCode: '34750', addressCountry: 'TR' },
           openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '09:00', closes: '18:00' }],
           geo: { '@type': 'GeoCoordinates', latitude: 40.9923, longitude: 29.1244 },

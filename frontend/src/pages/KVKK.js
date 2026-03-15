@@ -129,7 +129,7 @@ function KVKK() {
             </p>
             <div className="mt-4 p-6 border border-dark-800">
               <p className="mb-2"><span className="text-white">E-posta:</span> info@aesgarage.com</p>
-              <p className="mb-2"><span className="text-white">Telefon:</span> +90 555 123 45 67</p>
+              <p className="mb-2"><span className="text-white">Telefon:</span> +90 551 553 5657</p>
               <p><span className="text-white">Adres:</span> İstanbul, Türkiye</p>
             </div>
           </section>
