@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import carDatabase from '../data/carDatabase';
+import slugify from '../utils/slugify';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -133,6 +136,7 @@ function Admin() {
 
   // ─── Dinamik Servis Listesi ───
   const [servicesList, setServicesList] = useState(defaultServices);
+  const [serviceDetailContents, setServiceDetailContents] = useState({});
 
   // ─── İletişim Bilgileri (madde 11, 12) ───
   const [contactInfo, setContactInfo] = useState({
@@ -274,7 +278,26 @@ function Admin() {
       if (img.heroImage) setSiteImages(prev => ({ ...prev, heroImage: img.heroImage }));
       if (img.logo) setSiteImages(prev => ({ ...prev, logo: img.logo }));
 
-      try { if (general.servicesList) setServicesList(JSON.parse(general.servicesList)); } catch (e) { }
+      let parsedServices = null;
+      try {
+        if (general.servicesList) {
+          parsedServices = JSON.parse(general.servicesList);
+          setServicesList(parsedServices);
+        }
+      } catch (e) { }
+
+      // Fetch service detail contents
+      const svcs = parsedServices || defaultServices;
+      const detailMap = {};
+      await Promise.all(svcs.filter(s => s.title).map(async (s) => {
+        const sl = slugify(s.title);
+        if (!sl) return;
+        try {
+          const res = await axios.get(`${API}/api/service-details/${sl}`);
+          detailMap[sl] = res.data.content || '';
+        } catch (e) { detailMap[sl] = ''; }
+      }));
+      setServiceDetailContents(detailMap);
       try {
         if (general.chiptuningData) {
           const parsed = JSON.parse(general.chiptuningData);
@@ -481,7 +504,15 @@ function Admin() {
     setSaving(true);
     try {
       await saveSetting('servicesList', JSON.stringify(servicesList), 'general');
-      alert('Tüm servis bilgileri kaydedildi!');
+      // Save service detail contents
+      const detailPromises = servicesList.filter(s => s.title).map(s => {
+        const sl = slugify(s.title);
+        if (!sl) return Promise.resolve();
+        const content = serviceDetailContents[sl] || '';
+        return axios.post(`${API}/api/service-details/${sl}`, { content });
+      });
+      await Promise.all(detailPromises);
+      alert('Tüm servis bilgileri ve detay sayfaları kaydedildi!');
     } catch (err) { alert('Kaydetme hatası: ' + err.message); }
     finally { setSaving(false); }
   };
@@ -543,6 +574,20 @@ function Admin() {
   const updatePartner = (idx, val) => { const c = [...partners]; c[idx] = val; setPartners(c); };
   const addPartner = () => setPartners([...partners, '']);
   const removePartner = (idx) => setPartners(partners.filter((_, i) => i !== idx));
+
+  // ════════════════════════════════════
+  //  QUILL EDITOR CONFIG
+  // ════════════════════════════════════
+  const quillModules = useMemo(() => ({
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'image'],
+      [{ color: [] }],
+      ['clean'],
+    ],
+  }), []);
 
   // ════════════════════════════════════
   //  STYLING HELPERS
@@ -763,6 +808,22 @@ function Admin() {
                     {s.image && <img src={s.image} alt={s.title} className="w-full h-48 object-cover mb-3 border border-dark-700" />}
                     <input type="file" accept="image/*" onChange={(e) => handleServiceImageUpload(i, e.target.files[0])} disabled={uploadingImage === `service-${i}`} className={fileInputClass} />
                     {uploadingImage === `service-${i}` && <div className="mt-2 text-sm text-gray-400">Yükleniyor...</div>}
+                  </div>
+                  <div className="border-t border-dark-700 pt-5 mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Detay Sayfası İçeriği</label>
+                    <Hint>Bu içerik /hizmetler/{slugify(s.title) || 'slug'} sayfasında gösterilir. Başlık, paragraf, liste, resim ve link ekleyebilirsiniz.</Hint>
+                    <div className="mt-3 quill-dark">
+                      <ReactQuill
+                        theme="snow"
+                        value={serviceDetailContents[slugify(s.title)] || ''}
+                        onChange={(val) => {
+                          const sl = slugify(s.title);
+                          if (sl) setServiceDetailContents(prev => ({ ...prev, [sl]: val }));
+                        }}
+                        modules={quillModules}
+                        placeholder="Hizmet detay sayfası içeriğini buraya yazın..."
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

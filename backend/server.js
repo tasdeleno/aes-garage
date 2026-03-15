@@ -820,6 +820,35 @@ app.delete('/api/settings/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════
+//  SERVICE DETAIL CONTENT
+// ═══════════════════════════════════
+
+app.get('/api/service-details/:slug', async (req, res) => {
+  try {
+    const key = `serviceDetail_${req.params.slug}`;
+    const setting = await Settings.findOne({ key, category: 'serviceDetails' }).lean();
+    res.json({ content: setting ? setting.value : '' });
+  } catch (error) {
+    res.status(500).json({ message: 'Bir hata oluştu.' });
+  }
+});
+
+app.post('/api/service-details/:slug', authMiddleware, async (req, res) => {
+  try {
+    const key = `serviceDetail_${req.params.slug}`;
+    const { content } = req.body;
+    const setting = await Settings.findOneAndUpdate(
+      { key, category: 'serviceDetails' },
+      { value: content || '', updatedAt: Date.now() },
+      { upsert: true, new: true }
+    );
+    res.json(setting);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 // ============ GALLERY (Boyasız Hasar Onarım - Önce/Sonra Galerisi) ============
 
 // Public: Tüm galeri öğelerini getir

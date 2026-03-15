@@ -12,7 +12,7 @@ const SettingsSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['images', 'prices', 'contact', 'general'],
+    enum: ['images', 'prices', 'contact', 'general', 'serviceDetails'],
     default: 'general'
   },
   updatedAt: {

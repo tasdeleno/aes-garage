@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { getSettings } from '../utils/settingsCache';
+import slugify from '../utils/slugify';
 import SEOHead from '../components/SEOHead';
 
 const API = process.env.REACT_APP_API_URL || '';
@@ -529,7 +530,7 @@ function Home() {
                     <span className="text-[10px] font-light tracking-wider text-white">İnstagramda Gör</span>
                   </a>
                 )}
-                <Link to="/hizmetler" className="absolute inset-0 z-10">
+                <Link to={`/hizmetler/${slugify(service.title)}`} className="absolute inset-0 z-10">
                   <LazyImage
                     src={service.image || 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=800&q=80'}
                     alt={service.title}
