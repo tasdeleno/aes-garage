@@ -140,7 +140,7 @@ function Admin() {
 
   // ─── İletişim Bilgileri (madde 11, 12) ───
   const [contactInfo, setContactInfo] = useState({
-    phone: '+90 555 123 45 67',
+    phone: '+90 551 553 5657',
     email: 'info@aesgarage.com',
     address: 'Alver Apt, İçerenköy, Küçükbakkalköy Yolu Cd. No:44/B, 34752 Ataşehir/İstanbul',
     whatsapp: '905551234567',
