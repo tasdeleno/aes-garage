@@ -15,6 +15,7 @@ const TrackAppointment = lazy(() => import('./pages/TrackAppointment'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const LoadingScreen = lazy(() => import('./components/LoadingScreen'));
 const DamageRepair = lazy(() => import('./pages/DamageRepair'));
+const ServiceDetail = lazy(() => import('./pages/ServiceDetail'));
 
 const API = process.env.REACT_APP_API_URL || '';
 
@@ -220,6 +221,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/hakkimizda" element={<About />} />
               <Route path="/hizmetler" element={<Services />} />
+              <Route path="/hizmetler/:slug" element={<ServiceDetail />} />
               <Route path="/chiptuning" element={<Chiptuning />} />
               <Route path="/fiyatlar" element={<Pricing />} />
               <Route path="/randevu" element={<Appointment />} />

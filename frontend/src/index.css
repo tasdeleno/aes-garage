@@ -381,3 +381,93 @@
 .overflow-x-auto::-webkit-scrollbar {
   display: none;
 }
+
+/* Quill dark theme overrides */
+.quill-dark .ql-toolbar.ql-snow {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+.quill-dark .ql-container.ql-snow {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.3);
+  color: #e5e7eb;
+  font-family: inherit;
+  min-height: 200px;
+}
+.quill-dark .ql-editor {
+  min-height: 200px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.quill-dark .ql-editor.ql-blank::before {
+  color: rgba(255,255,255,0.3);
+  font-style: normal;
+}
+.quill-dark .ql-snow .ql-stroke {
+  stroke: #9ca3af;
+}
+.quill-dark .ql-snow .ql-fill {
+  fill: #9ca3af;
+}
+.quill-dark .ql-snow .ql-picker-label {
+  color: #9ca3af;
+}
+.quill-dark .ql-snow .ql-picker-options {
+  background: #1a1a1a;
+  border-color: rgba(255,255,255,0.1);
+}
+.quill-dark .ql-snow .ql-picker-item {
+  color: #e5e7eb;
+}
+.quill-dark .ql-toolbar button:hover .ql-stroke,
+.quill-dark .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #dc2626;
+}
+.quill-dark .ql-toolbar button:hover .ql-fill,
+.quill-dark .ql-toolbar button.ql-active .ql-fill {
+  fill: #dc2626;
+}
+
+/* Service detail page prose styling */
+.service-detail-content h1,
+.service-detail-content h2,
+.service-detail-content h3 {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+}
+.service-detail-content h1 { font-size: 2em; }
+.service-detail-content h2 { font-size: 1.5em; }
+.service-detail-content h3 { font-size: 1.25em; }
+.service-detail-content p {
+  margin-bottom: 1em;
+  line-height: 1.8;
+  color: #d1d5db;
+}
+.service-detail-content ul,
+.service-detail-content ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+.service-detail-content li {
+  margin-bottom: 0.5em;
+  color: #d1d5db;
+}
+.service-detail-content a {
+  color: #dc2626;
+  text-decoration: none;
+}
+.service-detail-content a:hover {
+  color: #ef4444;
+}
+.service-detail-content img {
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin: 1em 0;
+}
+.service-detail-content strong {
+  color: #fff;
+  font-weight: 500;
+}
