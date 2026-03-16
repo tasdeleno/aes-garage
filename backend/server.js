@@ -144,13 +144,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'"],
-      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      imgSrc:     ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com', 'https://images.unsplash.com', 'https://*.googleapis.com', 'https://*.gstatic.com'],
-      connectSrc: ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com', 'https://www.gstatic.com'],
+      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://www.googletagmanager.com'],
+      imgSrc:     ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com', 'https://images.unsplash.com', 'https://*.googleapis.com', 'https://*.gstatic.com', 'https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://www.google.com', 'https://googleads.g.doubleclick.net', 'https://*.google.com', 'https://*.doubleclick.net'],
+      connectSrc: ["'self'", 'https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://analytics.google.com', 'https://stats.g.doubleclick.net', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com'],
       fontSrc:    ["'self'", 'data:', 'https://fonts.gstatic.com'],
       objectSrc:  ["'none'"],
-      frameSrc:   ["https://maps.google.com", "https://www.google.com"],
+      frameSrc:   ["https://maps.google.com", "https://www.google.com", "https://www.googletagmanager.com", "https://td.doubleclick.net"],
     },
   },
 }));
